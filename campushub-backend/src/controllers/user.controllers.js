@@ -267,11 +267,48 @@ const Changepassword = asyncHandler(async(req,resp) => {
     .json(new ApiResponse(200,{},"password changed successfully"))
 })
 
-const getCurrentUser = asyncHandler(async(req,resp) => {
-     return resp
-     .status(200)
-     .json(200,req.user,"current user fetched successfully")
-})
+// const getCurrentUser = asyncHandler(async(req,resp) => {
+//      return resp
+//      .status(200)
+//      .json(200,req.user,"current user fetched successfully")
+// })
+const getCurrentUser = asyncHandler(async (req, res) => {
+  try {
+    // ✅ Fetch complete user (exclude password)
+    const user = await User.findById(req.user.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // ✅ CORRECT response format
+    res.status(200).json({
+      success: true,
+      message: 'Current user fetched successfully',
+      data: {
+        user: {
+          id: user._id,
+          username: user.username,
+          fullname: user.fullname,
+          email: user.email,
+          avatar: user.avatar,
+          branch: user.branch,
+          semester: user.semester,
+          stats: user.stats // If you have stats
+        }
+      }
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
 const updateUserAvatar = asyncHandler(async(req,resp) => {
     const avtarLocalpath =  req.file?.path
 
@@ -326,6 +363,100 @@ const updateAccountDetails  = asyncHandler(async(req,resp) => {
     // .json(new ApiResponse(200,user,"Account details update successfully"))
 })
 
+// controllers/userController.js
+//  const getActiveUsers = async (req, res) => {
+//   try {
+//     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    
+//     const activeUsers = await User.find({
+//       $or: [
+//         { isOnline: true },
+//         { lastActive: { $gte: fifteenMinutesAgo } }
+//       ],
+//       isDeleted: false
+//     })
+//     .select('fullname avatar branch semester isOnline lastActive status')
+//     .sort({ 
+//       isOnline: -1,
+//       lastActive: -1 
+//     })
+//     .limit(8)
+//     .lean();
+
+//     const formatted = activeUsers.map(user => ({
+//       _id: user._id,
+//       fullname: user.fullname,
+//       avatar: user.avatar || '/default-avatar.png',
+//       branch: user.branch,
+//       semester: `${user.semester}th Sem`,
+//       status: user.isOnline ? 'online' : 'recent'
+//     }));
+
+//     res.json({
+//       success: true,
+//       users: formatted,
+//       total: formatted.length
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+// controllers/userController.js - Include recent users too
+const getActiveUsers = async (req, res) => {
+  try {
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    
+    const activeUsers = await User.find({
+      $or: [
+        { isOnline: true },
+        { lastActive: { $gte: thirtyMinutesAgo } }
+      ]
+    })
+    .select('fullname avatar branch semester isOnline')
+    .sort({ isOnline: -1, lastActive: -1 })
+    .limit(8)
+    .lean();
+
+    const formatted = activeUsers.map(user => ({
+      _id: user._id,
+      fullname: user.fullname,
+      avatar: user.avatar || 'https://via.placeholder.com/44',
+      branch: user.branch,
+      semester: `${user.semester}th Sem`,
+      status: user.isOnline ? 'online' : 'recent'
+    }));
+
+    console.log(`👥 Found ${formatted.length} active users`);  // ✅ Debug
+
+    res.json({
+      success: true,
+      users: formatted,
+      total: formatted.length
+    });
+  } catch (error) {
+    console.error('Active users error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+ const getUserStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Total views across all posts/resources
+    const totalViews = await Post.aggregate([
+      { $match: { createdBy: id } },
+      { $group: { _id: null, total: { $sum: '$views' } } }
+    ]);
+
+    res.json({
+      success: true,
+      totalViews: totalViews[0]?.total || 0
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 export {
     registerUser,
     loginUser,
@@ -334,5 +465,7 @@ export {
     Changepassword,
     getCurrentUser,
     updateUserAvatar,
-    updateAccountDetails
+    updateAccountDetails,
+    getActiveUsers,
+    getUserStats
 }

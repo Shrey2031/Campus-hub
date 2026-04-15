@@ -48,6 +48,26 @@ const userSchema = new Schema(
       },
        refreshToken:{
         type:String,
+       },
+        isOnline: { 
+         type: Boolean, 
+         default: false 
+       },
+       lastActive: { 
+         type: Date, 
+         default: Date.now 
+       },
+       socketId: { 
+         type: String 
+       },
+       status: {
+         type: String,
+         enum: ['online', 'away', 'busy', 'offline'],
+         default: 'offline'
+       },
+       isDeleted: { 
+         type: Boolean, 
+         default: false 
        }
     },
 

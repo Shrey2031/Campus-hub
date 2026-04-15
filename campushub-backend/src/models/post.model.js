@@ -34,7 +34,15 @@ const postSchema = new mongoose.Schema({
   commentsCount: {
     type: Number,
     default: 0
-  }
+  },
+   views: { 
+    type: Number, 
+    default: 0 
+  },
+  isDeleted: { 
+    type: Boolean, 
+    default: false 
+  },
 
 }, { timestamps: true });
 

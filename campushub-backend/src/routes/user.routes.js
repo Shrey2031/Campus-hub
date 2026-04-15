@@ -7,6 +7,8 @@ import { Changepassword,
      registerUser,
      updateAccountDetails,
      updateUserAvatar,
+     getActiveUsers,
+     getUserStats
      } from "../controllers/user.controllers.js";
 import { upload } from "../middleware/multer.middleware.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
@@ -31,6 +33,9 @@ router.route("/change-password").post(verifyJWT,Changepassword);
 router.route("/current-user").get(verifyJWT,getCurrentUser);
 router.route("/update-account").patch(verifyJWT,updateAccountDetails);
 router.route("/avatar").patch(verifyJWT,upload.single("avatar"),updateUserAvatar);
+router.route("/active").get(verifyJWT,getActiveUsers);
+router.route("/:id/stats").get(verifyJWT,getUserStats);
+
 
 
 
