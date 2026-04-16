@@ -17,6 +17,8 @@ export default function ResourcesPage() {
   const fileInputRef = useRef(null);
   const token = safeStorage.getItem('token');
   const navigate = useNavigate();
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   // 🔥 SUBJECT OPTIONS
   const subjects = [
@@ -30,7 +32,7 @@ export default function ResourcesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('http://localhost:5000/api/v1/posts/resources/top/?type=resource&limit=50', {
+      const res = await axios.get(`${API_BASE_URL}/posts/resources/top/?type=resource&limit=50`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setResources(Array.isArray(res.data.resources) ? res.data.resources : []);
@@ -63,7 +65,7 @@ export default function ResourcesPage() {
 
     setUploading(true);
     try {
-      await axios.post('http://localhost:5000/api/v1/posts/create-post', formDataToSend, {
+      await axios.post(`${API_BASE_URL}/posts/create-post`, formDataToSend, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',

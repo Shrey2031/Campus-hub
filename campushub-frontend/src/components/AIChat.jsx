@@ -10,7 +10,9 @@ const AIChat = () => {
   const messagesEndRef = useRef(null);
 
   // Update API URL for production
-  const API_URL =  'http://localhost:5000';
+  
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,7 +67,7 @@ const handleSubmit = async (e) => {
 
   try {
     // 🔥 HARDCODE WORKING URL - COPY THIS EXACTLY
-    const response = await axios.post('http://localhost:5000/api/v1/ai/ask', {
+    const response = await axios.post(`${API_BASE_URL}/ai/ask`, {
       question: userQuestion
     });
     

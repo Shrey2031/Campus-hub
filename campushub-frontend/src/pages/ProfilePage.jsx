@@ -21,11 +21,13 @@ const ProfilePage = () => {
   const fileInputRef = useRef(null);
   const token = safeStorage.getItem('token');
   const navigate = useNavigate();
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   // 🔥 EXACT SAME fetchResourcesCount as your ResourcesPage
   const fetchResourcesCount = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/v1/posts/resources/top/?type=resource&limit=50', {
+      const res = await axios.get(`${API_BASE_URL}/posts/resources/top/?type=resource&limit=50`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -44,7 +46,7 @@ const ProfilePage = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/v1/users/current-user', {
+      const res = await axios.get(`${API_BASE_URL}/users/current-user`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const userData = res.data.data.user;
@@ -72,7 +74,7 @@ const ProfilePage = () => {
         }
       });
 
-      await axios.put('http://localhost:5000/api/v1/users/profile', updateData, {
+      await axios.put(`${API_BASE_URL}/users/profile`, updateData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -95,7 +97,7 @@ const ProfilePage = () => {
     formDataUpload.append('avatar', avatarFile);
 
     try {
-      await axios.patch('http://localhost:5000/api/v1/users/avatar', formDataUpload, {
+      await axios.patch(`${API_BASE_URL}/users/avatar`, formDataUpload, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

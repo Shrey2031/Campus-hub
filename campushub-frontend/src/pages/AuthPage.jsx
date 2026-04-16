@@ -28,7 +28,8 @@ export default function AuthPage() {
   const [success, setSuccess] = useState('');
 
   // API Configuration
-  const API_BASE_URL = 'http://localhost:5000/api/v1/users'; // Change to your backend URL
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1/users`;
+   // Change to your backend URL
   const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {

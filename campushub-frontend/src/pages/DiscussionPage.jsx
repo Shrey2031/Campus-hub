@@ -25,6 +25,8 @@ export default function Discussions() {
   const userData = safeStorage.getItem('user');
   const userId = userData ? JSON.parse(userData)._id : null;
   const navigate = useNavigate();
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   // 🔥 Create Room Form State
   const [roomForm, setRoomForm] = useState({
@@ -40,7 +42,7 @@ export default function Discussions() {
 const fetchRooms = useCallback(async () => {
   setLoading(true);
   try {
-    const res = await axios.get('http://localhost:5000/api/v1/discussions', {
+    const res = await axios.get(`${API_BASE_URL}/discussions`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -72,7 +74,7 @@ const fetchRooms = useCallback(async () => {
     setCreatingRoom(true);
     
     try {
-      const res = await axios.post('http://localhost:5000/api/v1/discussions', roomForm, {
+      const res = await axios.post(`${API_BASE_URL}/discussions`, roomForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -95,7 +97,7 @@ const fetchRooms = useCallback(async () => {
   // 🔥 Replace fetchMessages (Line 108)
      const fetchMessages = useCallback(async (roomId) => {
   try {
-    const res = await axios.get(`http://localhost:5000/api/v1/discussions/${roomId}/messages`, {
+    const res = await axios.get(`${API_BASE_URL}/discussions/${roomId}/messages`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -156,7 +158,7 @@ const isJoined = (room) => {
 const joinDiscussion = async (roomId) => {
   try {
     const res = await axios.post(
-      `http://localhost:5000/api/v1/discussions/${roomId}/join`, 
+      `${API_BASE_URL}/discussions/${roomId}/join`, 
       {}, 
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -189,7 +191,7 @@ const handleRoomClick = (room) => {
   useEffect(() => {
     if (!userId || !token) return;
 
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(`${import.meta.env.VITE_API_URL}`, {
       auth: { token }
     });
 

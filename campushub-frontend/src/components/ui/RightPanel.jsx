@@ -22,6 +22,8 @@ export default function RightSidebar() {
   const token = safeStorage.getItem('token');
   const userData = safeStorage.getItem('user');
   const userId = userData ? JSON.parse(userData)._id : null;
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   // 🔥 TIME FORMATTER
   const formatTime = (dateString) => {
@@ -41,7 +43,7 @@ export default function RightSidebar() {
     setLoading(true);
     try {
       const promises = [
-        axios.get('http://localhost:5000/api/v1/notifications/', {
+        axios.get(`${API_BASE_URL}/notifications/`, {
           headers: { Authorization: `Bearer ${token}` }
         }).then(res => {
           const formatted = res.data.notifications.map(n => ({
@@ -52,17 +54,17 @@ export default function RightSidebar() {
           setNotificationCount(formatted.filter(n => !n.read).length);
         }),
         
-        axios.get('http://localhost:5000/api/v1/posts/trending-topics',
+        axios.get(`${API_BASE_URL}/posts/trending-topics`,
            {
           headers: { Authorization: `Bearer ${token}` }
         }).then(res => setTrending(res.data.topics || [])),
 
-        axios.get('http://localhost:5000/api/v1/users/active',
+        axios.get(`${API_BASE_URL}/users/active`,
            {
           headers: { Authorization: `Bearer ${token}` }
         }).then(res => setActiveUsers(res.data.users || [])),
 
-        axios.get('http://localhost:5000/api/v1/posts/resources/top', {
+        axios.get(`${API_BASE_URL}/posts/resources/top`, {
           headers: { Authorization: `Bearer ${token}` }
         }).then(res => setResources(res.data.resources || []))
       ];
@@ -80,7 +82,7 @@ export default function RightSidebar() {
     if (!userId || !token) return;
 
     // Connect socket
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(`${import.meta.env.VITE_API_URL}`, {
       auth: { token },
        transports: ['websocket', 'polling']
 
@@ -143,7 +145,7 @@ export default function RightSidebar() {
   // 🔥 MARK ALL READ
   const markAllRead = async () => {
     try {
-      await axios.put('http://localhost:5000/api/v1/notifications/read-all', {}, {
+      await axios.put(`${API_BASE_URL}/notifications/read-all`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -157,7 +159,7 @@ export default function RightSidebar() {
   // 🔥 MARK SINGLE READ
   const markSingleRead = async (notificationId) => {
     try {
-      await axios.put(`http://localhost:5000/api/v1/notifications/${notificationId}/read`, {}, {
+      await axios.put(`${API_BASE_URL}/notifications/${notificationId}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(prev => prev.map(n => 

@@ -41,6 +41,8 @@ const [isAuthor, setIsAuthor] = useState(false);
   //  const userId = safeStorage.getItem('user')?._id;
   const storedUser = safeStorage.getItem('user');
 const userId = storedUser ? JSON.parse(storedUser)._id : null;
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1/`;
+
 
    
   console.log('🔍 PostCard render - userId:', userId);
@@ -247,7 +249,7 @@ const fetchReplies = useCallback(async (commentId) => {
 
     const token = safeStorage.getItem('token');
     const response = await axios.get(
-      `http://localhost:5000/api/v1/comments/${post._id}/${commentId}/replies`,
+      `${API_BASE_URL}comments/${post._id}/${commentId}/replies`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -299,7 +301,7 @@ const toggleReply = useCallback((commentId) => {
     const token = safeStorage.getItem('token');
     
     await axios.post(
-      `http://localhost:5000/api/v1/comments/`,
+      `${API_BASE_URL}comments/`,
       {
         content: replyText.trim(),
         postId: post._id,
@@ -324,7 +326,7 @@ const toggleReply = useCallback((commentId) => {
   try {
     const token = safeStorage.getItem('token');
     const response = await axios.get(
-      `http://localhost:5000/api/v1/comments/${post._id}`,
+      `${API_BASE_URL}comments/${post._id}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     setRecentComments(response.data.comments || []);
@@ -344,7 +346,7 @@ const toggleReply = useCallback((commentId) => {
     console.log('🔄 POST /api/v1/posts/' + post._id + '/like');
 
     const response = await axios.post(
-      `http://localhost:5000/api/v1/posts/${post._id}/like`,  // ✅ EXACT ROUTE
+      `${API_BASE_URL}posts/${post._id}/like`,  // ✅ EXACT ROUTE
       {},  // Empty body
       { 
         headers: { 
@@ -370,7 +372,7 @@ const toggleReply = useCallback((commentId) => {
     console.error('❌ Like error:', {
       status: err.response?.status,
       message: err.response?.data?.message || err.message,
-      url: `http://localhost:5000/api/v1/posts/${post._id}/like`
+      url: `${API_BASE_URL}posts/${post._id}/like`
     });
 
     if (err.response?.status === 404) {
@@ -386,7 +388,7 @@ const toggleReply = useCallback((commentId) => {
     try {
       const token = safeStorage.getItem('token');
       const response = await axios.get(
-        `http://localhost:5000/api/v1/comments/${post._id}/comments-count`,
+        `${API_BASE_URL}comments/${post._id}/comments-count`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCommentsCount(response.data.commentsCount);
@@ -410,7 +412,7 @@ const toggleReply = useCallback((commentId) => {
     const token = safeStorage.getItem('token');
     
     // ✅ TRY YOUR ACTUAL DELETE ENDPOINT
-    const response = await axios.delete(`http://localhost:5000/api/v1/posts/${post._id}`, {
+    const response = await axios.delete(`${API_BASE_URL}posts/${post._id}`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {} // ✅ Send empty body for DELETE
     });
@@ -497,7 +499,7 @@ const handleEdit = () => {
 
   try {
     const token = safeStorage.getItem('token');
-    await axios.post(`http://localhost:5000/api/v1/comments/`, {
+    await axios.post(`${API_BASE_URL}comments/`, {
       content: commentText.trim(),
       postId: post._id,
       parentCommentId: null
@@ -519,7 +521,7 @@ const handleDeleteComment = async (commentId) => {
   
   try {
     const token = safeStorage.getItem('token');
-    const response = await axios.delete(`http://localhost:5000/api/v1/comments/${commentId}`, {
+    const response = await axios.delete(`${API_BASE_URL}comments/${commentId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -569,7 +571,7 @@ const handleDeleteComment = async (commentId) => {
     if (!localReplyText.trim()) return;
     try {
       const token = safeStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/v1/comments/`, {
+      await axios.post(`${API_BASE_URL}comments/`, {
         content: localReplyText.trim(),
         postId: postId,
         parentCommentId: comment._id

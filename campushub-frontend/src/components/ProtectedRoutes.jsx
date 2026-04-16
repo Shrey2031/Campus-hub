@@ -20,10 +20,7 @@ export default function ProtectedRoute({ children }) {
           return;
         }
 
-        // ✅ Verify token directly
-        // await axios.get('http://localhost:5000/api/v1/users/current-user', {
-        //   headers: { Authorization: `Bearer ${token}` }
-        // });
+       
         
         setIsAuthenticated(true);
       } catch (error) {

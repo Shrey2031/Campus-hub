@@ -17,7 +17,9 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const API_BASE_URL = 'http://localhost:5000/api/v1';
+  // const API_BASE_URL = 'http://localhost:5000/api/v1';
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   const fetchPosts = async (pageNum = 1) => {
     try {

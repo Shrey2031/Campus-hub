@@ -17,6 +17,8 @@ export default function UploadPage() {
   });
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   const currentUser = useMemo(() => {
     try {
@@ -45,7 +47,7 @@ export default function UploadPage() {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/v1/posts/create-post', formData, {
+      await axios.post(`${API_BASE_URL}/posts/create-post`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

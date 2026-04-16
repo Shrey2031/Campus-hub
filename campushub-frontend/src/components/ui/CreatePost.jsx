@@ -15,7 +15,8 @@ export default function CreatePost() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState(null);
 
-  const API_BASE_URL = 'http://localhost:5000/api/v1';
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+  
 
   // Fetch current user
   useEffect(() => {

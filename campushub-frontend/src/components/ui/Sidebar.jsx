@@ -22,6 +22,8 @@ export default function Sidebar() {
   const [loggingOut, setLoggingOut] = useState(false); // ✅ Loading state
 
   const isActive = (path) => location.pathname.startsWith(path);
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
+
 
   // 🔥 LOGOUT FUNCTION
      // 🔥 FIXED LOGOUT - MANUAL STORAGE CLEAR
@@ -31,7 +33,7 @@ export default function Sidebar() {
       const token = safeStorage.getItem('token');
       
       // Call backend logout API
-      await axios.post('http://localhost:5000/api/v1/users/logout', {}, {
+      await axios.post(`${API_BASE_URL}/users/logout`, {}, {
         headers: { 
           Authorization: `Bearer ${token}` 
         }

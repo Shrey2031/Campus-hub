@@ -10,6 +10,8 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
+
 
   // Initialize auth state
   useEffect(() => {
@@ -19,7 +21,7 @@ export function AuthProvider({ children }) {
       if (token) {
         try {
           // Verify token and get user
-          const response = await axios.get('http://localhost:5000/api/auth/profile', {
+          const response = await axios.get(`${API_BASE_URL}/auth/profile`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -44,7 +46,7 @@ export function AuthProvider({ children }) {
   // Login function
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/v1/users/login', {
+      const response = await axios.post(`${API_BASE_URL}/v1/users/login`, {
         email,
         password
       });
@@ -74,7 +76,7 @@ export function AuthProvider({ children }) {
         if (formData[key]) signupData.append(key, formData[key]);
       });
 
-      const response = await axios.post('http://localhost:5000/api/v1/users/register', signupData, {
+      const response = await axios.post(`${API_BASE_URL}/v1/users/register`, signupData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
