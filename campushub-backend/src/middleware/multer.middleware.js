@@ -1,6 +1,6 @@
 
 import multer from "multer";
-import path from "path";
+
 
 // ✅ storage
 const storage = multer.diskStorage({

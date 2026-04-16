@@ -4,7 +4,7 @@ import {Post} from '../models/post.model.js';
 import { upload } from '../middleware/multer.middleware.js'; // Your existing multer
 import { uploadOnCloudinary } from '../utils/cloudinary.js'; // Your existing cloudinary
 import { createNotification } from './notification.controller.js'; // For notifications
-import {v2 as cloudinary} from 'cloudinary'; // For direct Cloudinary API calls in delete
+
 
 // 🟢 CREATE POST
 // export const createPost = [

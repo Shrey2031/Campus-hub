@@ -1,7 +1,5 @@
 // controllers/notification.controller.js - FULL FIXED VERSION
 import Notification from '../models/notification.model.js';
-import { emitNotification } from '../utils/socketHelper.js'; 
-import { Comment } from 'postcss'; // ✅ Now works!
 import mongoose from 'mongoose';
 
 

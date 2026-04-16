@@ -1,6 +1,6 @@
 import DiscussionRoom from '../models/discussion.model.js';
 import Message from '../models/message.model.js';
-import {User} from '../models/user.model.js';
+
 
 // 🔥 Create Room
 export const createDiscussionRoom = async (req, res) => {

@@ -9,11 +9,8 @@ import {
   toggleLike,
   getTrendingTopics,
   getTopResources,
-  downloadResource,
   getUserPostsCount,
-  getUserResourcesCount
-
-} from '../controllers/post.controllers.js';
+ } from '../controllers/post.controllers.js';
 
 import { verifyJWT } from '../middleware/auth.middleware.js';
 import { upload } from '../middleware/multer.middleware.js';
