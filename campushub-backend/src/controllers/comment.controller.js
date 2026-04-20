@@ -2,6 +2,17 @@ import {Comment} from '../models/comment.model.js';
 import {Post} from '../models/post.model.js';
 import Notification from '../models/notification.model.js';
 
+// ✅ Add this at top of file (or import from notifications controller)
+const formatTime = (date) => {
+  const now = new Date();
+  const diffMs = now - new Date(date);
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+  return `${Math.floor(diffMins / 1440)}d ago`;
+};
 
 // 🟢 CREATE COMMENT / REPLY
 // export const createComment = async (req, res) => {
@@ -88,8 +99,12 @@ export const createComment = async (req, res) => {
     try {
       const post = await Post.findById(postId).populate('createdBy');
       console.log('🔍 Post:', post?._id, 'Author:', post?.createdBy?._id);
+       console.log('🔍 Current User:', req.user._id);
 
-      if (post && post.createdBy && post.createdBy._id.toString() !== req.user._id.toString()) {
+      // if (post && post.createdBy && post.createdBy._id.toString() !== req.user._id.toString())
+        if (post && post.createdBy && 
+        !post.createdBy._id.equals(req.user._id))
+        {
         console.log('🚀 Creating notification...');
         
         const notification = new Notification({
@@ -111,7 +126,8 @@ export const createComment = async (req, res) => {
             title: notification.title,
             text: notification.message,
             type: 'comment',
-            time: 'Just now',
+            // time: formatTime(notification.createdAt),
+    createdAt: notification.createdAt,
             read: false,
             relatedId: postId
           });

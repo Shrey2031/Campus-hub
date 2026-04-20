@@ -15,7 +15,8 @@ const httpServer = createServer(app);  // ✅ HTTP server for WebSocket
 const io = new Server(httpServer, {     // ✅ Socket.IO server
   cors: {
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 dotenv.config({
@@ -41,30 +42,7 @@ setInterval(async () => {
 io.on('connection', (socket) => {
   console.log('🔌 Socket connected:', socket.id);
 
-  // Join user room for notifications
-   // 🔥 JOIN USER + UPDATE STATUS
-  // socket.on('join-user', async (userId) => {
-  //   socket.join(`user_${userId}`);
-  //   socket.userId = userId;  // ✅ Store for disconnect
-    
-  //   try {
-  //     // 🔥 UPDATE DB STATUS
-  //     await User.findByIdAndUpdate(userId, {
-  //       isOnline: true,
-  //       socketId: socket.id,
-  //       lastActive: new Date(),
-  //       status: 'online'
-  //     });
-      
-  //     console.log(`✅ User ${userId} (${socket.id}) is ONLINE`);
-      
-  //     // 🔥 Notify everyone to refresh active users
-  //     io.emit('active-users-update');
-  //   } catch (error) {
-  //     console.error('❌ Status update failed:', error);
-  //   }
-  // });
-
+ 
   socket.on('join-user', async (userId) => {
   socket.join(`user_${userId}`);
   socket.userId = userId;
@@ -86,29 +64,7 @@ io.on('connection', (socket) => {
     console.error('❌ Status update failed:', error);
   }
 });
-    // 🔥 NEW DISCUSSION ROOMS (ADD THESE)
-  // socket.on('join-room', async (roomId) => {
-  //   socket.join(`room_${roomId}`);
-  //   socket.currentRoom = roomId;
-    
-  //   try {
-  //     // Add user to participants
-  //     await DiscussionRoom.findByIdAndUpdate(roomId, {
-  //       $addToSet: { participants: socket.userId }
-  //     });
-      
-  //     // Notify others
-  //     socket.to(`room_${roomId}`).emit('user-joined', {
-  //       userId: socket.userId,
-  //       username: socket.username || 'User',
-  //       message: 'joined the discussion'
-  //     });
-      
-  //     console.log(`👥 ${socket.userId} joined room ${roomId}`);
-  //   } catch (error) {
-  //     console.error('❌ Room join failed:', error);
-  //   }
-  // });
+  
 
   socket.on('join-room', async (roomId) => {
   socket.join(`room_${roomId}`);

@@ -446,52 +446,7 @@ const handleEdit = () => {
   window.location.href = `/edit-post/${post._id}`;
 };
 
-//  const handleCommentSubmit = async (e) => {
-//     if (e) e.preventDefault();
-    
-//     if (!commentText.trim()) return;
 
-//     try {
-//       const token = safeStorage.getItem('token');
-//       if (!token) {
-//         alert('Please login to comment');
-//         return;
-//       }
-
-//       console.log('📝 Posting comment:', commentText);
-
-//       const response = await axios.post(
-//         `http://localhost:5000/api/v1/comments/`,
-//         { content: commentText.trim(),
-//            postId: post._id,
-//             parentCommentId: null 
-//          },
-//         { 
-//           headers: { 
-//             Authorization: `Bearer ${token}`,
-//             'Content-Type': 'application/json'
-//           } 
-//         }
-//       );
-
-//       console.log('✅ Comment posted:', response.data);
-
-//       // Reset form & refresh
-//       setCommentText('');
-//       setCommentsCount(prev => prev + 1);
-//       fetchRecentComments();
-      
-//       // Auto-focus input
-//       commentInputRef.current?.focus();
-      
-//     } catch (err) {
-//       console.error('❌ Comment error:', err.response?.data || err.message);
-//       alert(err.response?.data?.message || 'Failed to post comment');
-//     }
-//   };
-
-  // ✅ In your PostCard component
- // ✅ ADD THIS FUNCTION in PostCard
  
  const handleCommentSubmit = async (e) => {
   if (e) e.preventDefault();
@@ -549,8 +504,9 @@ const handleDeleteComment = async (commentId) => {
 }, [recentComments]);
    // ✅ ADD THIS RECURSIVE COMPONENT at the top of your component (before return)
 
-  // ✅ FULLY WORKING NESTED COMMENT COMPONENT
-   const NestedComment = ({ comment, level = 0, postId, onDeleteComment, deletingCommentId, userId }) => {
+
+
+const NestedComment = ({ comment, level = 0, postId, onDeleteComment, deletingCommentId, userId }) => {
   const [replying, setReplying] = useState(false);
   const [localReplyText, setLocalReplyText] = useState('');
   const textareaRef = useRef(null);
@@ -559,7 +515,6 @@ const handleDeleteComment = async (commentId) => {
   const repliesLoading = commentReplies?.loading;
   const repliesData = commentReplies?.data || [];
   
-  // ✅ FIXED: Debug + fallback
   const isOwner = userId && comment.user?._id && userId === comment.user?._id;
   const isDeleting = deletingCommentId === comment._id;
 
@@ -587,54 +542,70 @@ const handleDeleteComment = async (commentId) => {
     }
   }, [localReplyText, postId, comment._id]);
 
-  const marginLeft = level * 24;
+  // 🔥 MOBILE-FRIENDLY INDENTATION
+  const mobileIndent = level * 16; // Reduced from 24px
   const isMainComment = level === 0;
+  const maxLevel = 3; // Prevent deep nesting on mobile
 
   return (
-    <div className={`space-y-3 ${level > 0 ? `ml-${marginLeft}` : ''}`}>
-      <div className={`flex space-x-${isMainComment ? '3' : '2.5'} p-${isMainComment ? '4' : '3.5'} rounded-2xl shadow-sm border transition-all hover:shadow-md group/comment ${
-        isMainComment ? 'bg-white/90 border-gray-100 backdrop-blur-sm' : 'bg-gradient-to-r from-gray-50/60 to-white/70 border-gray-200/50'
+    <div className={`space-y-3 ${level > 0 ? `ml-${mobileIndent} sm:ml-${level * 24}` : ''}`}>
+      {/* 🔥 MAIN COMMENT CONTAINER - MOBILE STACKED */}
+      <div className={`flex flex-col sm:flex-row sm:space-x-${isMainComment ? '3' : '2.5'} p-${isMainComment ? '4' : '3.5'} rounded-2xl shadow-sm border transition-all hover:shadow-md group/comment ${
+        isMainComment 
+          ? 'bg-white/90 border-gray-100 backdrop-blur-sm' 
+          : 'bg-gradient-to-r from-gray-50/60 to-white/70 border-gray-200/50'
       }`}>
         
-        {/* AVATAR */}
+        {/* 🔥 AVATAR - FULL WIDTH MOBILE */}
+        <div className="flex sm:hidden w-full justify-center mb-3 pb-2 border-b border-gray-100">
+          <img 
+            src={comment.user?.avatar || 'https://via.placeholder.com/40x40/6B7280/FFFFFF?text=👤'} 
+            onError={(e) => e.target.src = 'https://via.placeholder.com/40x40/6B7280/FFFFFF?text=👤'}
+            className="w-12 h-12 rounded-full ring-3 ring-white/50 shadow-lg object-cover"
+            alt="avatar"
+          />
+        </div>
+        
+        {/* DESKTOP AVATAR */}
         <img 
           src={comment.user?.avatar || 'https://via.placeholder.com/40x40/6B7280/FFFFFF?text=👤'} 
           onError={(e) => e.target.src = 'https://via.placeholder.com/40x40/6B7280/FFFFFF?text=👤'}
-          className={`w-${isMainComment ? '10' : '8'} h-${isMainComment ? '10' : '8'} rounded-full ring-3 ring-white/50 shadow-lg flex-shrink-0 object-cover`}
+          className={`hidden sm:flex w-${isMainComment ? '10' : '8'} h-${isMainComment ? '10' : '8'} rounded-full ring-3 ring-white/50 shadow-lg flex-shrink-0 object-cover`}
           alt="avatar"
         />
         
-        <div className="flex-1 min-w-0 space-y-2">
+        {/* CONTENT */}
+        <div className="flex-1 min-w-0 space-y-2 w-full">
           {/* HEADER */}
-          <div className="flex items-start justify-between">
-            <div className="space-y-0.5">
-              <div className="flex items-center space-x-2">
-                <span className={`font-semibold ${isMainComment ? 'text-base' : 'text-sm'} text-gray-900 truncate`}>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
+            <div className="space-y-0.5 w-full sm:w-auto">
+              <div className="flex items-center flex-wrap gap-2">
+                <span className={`font-semibold ${isMainComment ? 'text-base' : 'text-sm'} text-gray-900 truncate max-w-[85%]`}>
                   {comment.user?.fullname || comment.user?.username || 'User'}
                 </span>
-                {isMainComment && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
+                {isMainComment && <span className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></span>}
               </div>
               {(comment.user?.branch || comment.user?.semester) && (
-                <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                   {comment.user?.branch && <span>{comment.user.branch}</span>}
                   {comment.user?.branch && comment.user?.semester && <span>•</span>}
                   {comment.user?.semester && <span>{comment.user.semester} Sem</span>}
                 </div>
               )}
             </div>
-            <span className={`text-xs font-medium ${isMainComment ? 'text-gray-500' : 'text-gray-400'}`}>
+            <span className={`text-xs font-medium ${isMainComment ? 'text-gray-500' : 'text-gray-400'} flex-shrink-0 order-first sm:order-last`}>
               {formatTime(comment.createdAt)}
             </span>
           </div>
           
-          <p className={`${isMainComment ? 'text-base' : 'text-sm'} text-gray-900 leading-relaxed`}>
+          <p className={`${isMainComment ? 'text-base' : 'text-sm'} text-gray-900 leading-relaxed break-words`}>
             {comment.content}
           </p>
           
-          {/* ✅ FIXED ACTIONS */}
-          <div className="flex items-center justify-between pt-2">
+          {/* ACTIONS */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 gap-2 sm:gap-0">
             {/* Left: Reply & View Replies */}
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 order-2 sm:order-1">
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -644,9 +615,9 @@ const handleDeleteComment = async (commentId) => {
                     fetchRepliesForThis();
                   }
                 }}
-                className="flex items-center space-x-1.5 p-2.5 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all text-sm font-medium"
+                className="flex items-center gap-1.5 px-3 py-2 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all text-sm font-medium bg-white/50 border border-gray-200/50"
               >
-                <MessageCircle className="w-4 h-4" />
+                <MessageCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{replying ? 'Cancel' : 'Reply'}</span>
               </button>
               
@@ -657,78 +628,54 @@ const handleDeleteComment = async (commentId) => {
                     e.preventDefault();
                     fetchRepliesForThis();
                   }}
-                  className="flex items-center space-x-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2.5 rounded-xl transition-all font-medium text-sm"
+                  className="flex items-center gap-1.5 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all font-medium text-sm bg-white/50 border border-blue-200/50"
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-4 h-4 flex-shrink-0" />
                   <span>{comment.repliesCount} replies</span>
                 </button>
               )}
             </div>
 
-            {/* ✅ FIXED DELETE - VISIBLE FOR YOU */}
-            {/* <div className="ml-3 flex-shrink-0">
+            {/* 🔥 DELETE BUTTON - FULL WIDTH MOBILE */}
+            <div className="flex-shrink-0 order-1 sm:order-2 w-full sm:w-auto sm:ml-3">
               {isOwner ? (
-                <button 
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    if (window.confirm('Delete your comment?')) {
+                    if (confirm('Delete your comment?')) {
                       onDeleteComment(comment._id);
                     }
                   }}
                   disabled={isDeleting}
-                  className="p-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center group w-10 h-10 disabled:opacity-50"
+                  className="w-full sm:w-12 sm:h-12 p-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center group disabled:opacity-50"
                   title="Delete your comment"
                 >
                   {isDeleting ? (
-                    <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
                   )}
                 </button>
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <span className="text-xs text-gray-400">...</span>
+                <div className="w-full sm:w-12 sm:h-12 bg-gray-100 rounded-2xl flex items-center justify-center">
+                  <span className="text-gray-400 text-xs">...</span>
                 </div>
               )}
-            </div> */}
-
-            {/* ✅ ULTRA-SIMPLE DELETE - Replace entire right div */}
-                 {/* ✅ FINAL DELETE BUTTON - Replace entire right div */}
-<div className="ml-4 flex-shrink-0">
-  {userId === comment.user?._id ? (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (confirm('Delete your comment?')) {
-          onDeleteComment(comment._id);
-        }
-      }}
-      className="p-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all w-12 h-12 flex items-center justify-center group"
-      title="Delete your comment"
-    >
-      <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-    </button>
-  ) : (
-    <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center">
-      <span className="text-gray-400 text-xs">...</span>
-    </div>
-  )}
-</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* REPLY INPUT */}
+      {/* 🔥 REPLY INPUT - BETTER MOBILE */}
       {replying && (
-        <div className={`ml-${marginLeft + 12} p-4 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 border border-blue-200/50 rounded-2xl shadow-lg backdrop-blur-sm`}>
+        <div className={`ml-${Math.min(mobileIndent + 12, 48)} sm:ml-${level * 24 + 12} p-4 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 border border-blue-200/50 rounded-2xl shadow-lg backdrop-blur-sm`}>
           <div className="flex items-start space-x-3">
             <img 
               src={userAvatar || 'https://via.placeholder.com/32x32/6B7280/FFFFFF?text=👤'} 
-              className="w-8 h-8 rounded-full ring-2 ring-white shadow-md flex-shrink-0 mt-0.5" 
+              className="w-9 h-9 rounded-full ring-2 ring-white shadow-md flex-shrink-0 mt-0.5" 
             />
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-3 min-w-0">
               <textarea
                 ref={textareaRef}
                 value={localReplyText}
@@ -743,11 +690,11 @@ const handleDeleteComment = async (commentId) => {
                   }
                 }}
               />
-              <div className="flex items-center justify-end space-x-3 pt-1">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 pt-1">
                 <button 
                   onClick={handleReplySubmit}
                   disabled={!localReplyText.trim()}
-                  className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
+                  className="px-4 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 transition-all flex-1 sm:flex-none w-full sm:w-auto"
                 >
                   Post Reply
                 </button>
@@ -756,7 +703,7 @@ const handleDeleteComment = async (commentId) => {
                     setReplying(false);
                     setLocalReplyText('');
                   }}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium rounded-xl hover:bg-gray-100 transition-all"
+                  className="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-900 font-medium rounded-xl hover:bg-gray-100 transition-all flex-1 sm:flex-none w-full sm:w-auto"
                 >
                   Cancel
                 </button>
@@ -766,21 +713,22 @@ const handleDeleteComment = async (commentId) => {
         </div>
       )}
 
-      {/* REPLIES */}
-      {comment.repliesCount > 0 && commentReplies?.data?.length > 0 && (
-        <div className={`ml-${marginLeft + 12} space-y-3 pb-4 border-l-4 border-blue-200/50 pl-6`}>
-          <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50/50 rounded-xl border border-blue-200/30">
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+      {/* 🔥 REPLIES - MOBILE OPTIMIZED */}
+      {level < maxLevel && comment.repliesCount > 0 && commentReplies?.data?.length > 0 && (
+        <div className={`ml-${Math.min(mobileIndent + 12, 48)} sm:ml-${level * 24 + 12} space-y-3 pb-4 border-l-4 border-blue-200/50 pl-6 sm:pl-6`}>
+          <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/50 rounded-xl border border-blue-200/30">
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0" />
             <span className="text-xs font-semibold text-blue-700">{commentReplies.count} replies</span>
           </div>
           <div className="space-y-3">
             {repliesData
               .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .slice(0, level === 0 ? 10 : 5) // Limit replies on mobile
               .map((reply) => (
                 <NestedComment
                   key={reply._id}
                   comment={reply}
-                  level={level + 1}
+                  level={Math.min(level + 1, maxLevel)} // Cap nesting level
                   postId={postId}
                   onDeleteComment={onDeleteComment}
                   deletingCommentId={deletingCommentId}
@@ -792,8 +740,8 @@ const handleDeleteComment = async (commentId) => {
       )}
 
       {comment.repliesCount > 0 && repliesLoading && (
-        <div className={`ml-${marginLeft + 12} flex items-center space-x-2 p-4 text-sm text-gray-500 bg-gray-50 rounded-xl`}>
-          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className={`ml-${Math.min(mobileIndent + 12, 48)} sm:ml-${level * 24 + 12} flex items-center gap-2 p-4 text-sm text-gray-500 bg-gray-50 rounded-xl`}>
+          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
           <span>Loading replies...</span>
         </div>
       )}
@@ -809,22 +757,22 @@ const handleDeleteComment = async (commentId) => {
     
       {/* Post Header with Dropdown Menu */}
       {/* ✅ PERFECT HEADER - Copy this entire block */}
-   <div className="px-5 py-4 border-b border-gray-100 relative">
+   <div className="sm:px-5 sm:py-4 px-4 py-3 border-b border-gray-100 relative">
   <div className="flex items-start space-x-3">
-    <img src={authorAvatar} alt={authorName} className="w-11 h-11 rounded-full ring-2 ring-white shadow-md flex-shrink-0" onError={(e) => e.target.src = 'https://via.placeholder.com/44x44/6B7280/FFFFFF?text=👤'} />
+    <img src={authorAvatar} alt={authorName} className="sm:w-11 sm:h-11 w-10 h-10 rounded-full ring-2 ring-white shadow-md flex-shrink-0" onError={(e) => e.target.src = 'https://via.placeholder.com/44x44/6B7280/FFFFFF?text=👤'} />
     <div className="flex-1 min-w-0">
-      <div className="flex items-center space-x-2 mb-0.5">
-        <h3 className="font-semibold text-gray-900 text-base truncate">{authorName}</h3>
-        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-        <span className="text-xs text-gray-500 font-medium">{postTime}</span>
+      <div className="flex items-center space-x-2 mb-0.5 flex-wrap">
+        <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{authorName}</h3>
+        <span className=" w-1.5 h-1.5sm:w-2 sm:h-2 bg-green-500 rounded-full flex-shrink-0"></span>
+        <span className="text-xs sm:text-sm text-gray-500 font-medium">{postTime}</span>
       </div>
       {authorBranch && authorSemester && (
-  <p className="text-xs text-gray-500 mb-1">
+  <p className="text-xs sm:text-sm text-gray-500 mb-1 hidden sm:block">
     {authorBranch} • {authorSemester}th Sem
   </p>
 )}
-      <div className="flex items-center space-x-2">
-        <span className="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-lg">{postTag}</span>
+      <div className="flex items-center space-x-2 mt-1">
+        <span className=" px-2  py-0.5 sm:px-2.5 sm:py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-lg">{postTag}</span>
         
         <div className="relative ml-auto">
           <button onClick={() => setShowPostMenu(!showPostMenu)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 p-1 group">

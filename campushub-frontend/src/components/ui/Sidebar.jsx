@@ -65,7 +65,8 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-72 bg-white/90 backdrop-blur-2xl border-r border-white/50 h-screen sticky top-0 shadow-2xl">
+    
+    <div className="hidden lg:block w-72 bg-white/90 backdrop-blur-2xl border-r border-white/50 h-screen sticky top-0 shadow-2xl">
       <div className="p-8">
         <nav className="space-y-3">
           {menuItems.map((item) => {
@@ -107,5 +108,6 @@ export default function Sidebar() {
         </nav>
       </div>
     </div>
+    
   );
 }

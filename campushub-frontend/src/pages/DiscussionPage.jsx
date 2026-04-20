@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Users, MessageCircle, Search, Plus, ChevronLeft, X, 
-  Hash, Book, Users2, Shield, Calendar 
+  Hash, Book, Users2, Shield, Calendar ,Menu, ChevronDown
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import safeStorage from '../contexts/safeStorage';
@@ -18,6 +18,23 @@ export default function Discussions() {
   const [search, setSearch] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState(false);
+  const [showRooms, setShowRooms] = useState(false);
+const [isDesktop, setIsDesktop] = useState(false);
+const [showMembers, setShowMembers] = useState(true);
+const [showMobileRooms, setShowMobileRooms] = useState(false);
+const messageInputRef = useRef(null); // ← ADD THIS
+// const socketRef = useRef();
+
+// Add this useEffect for responsive detection
+useEffect(() => {
+  const checkScreenSize = () => {
+    setIsDesktop(window.innerWidth >= 1024);
+  };
+  
+  checkScreenSize();
+  window.addEventListener('resize', checkScreenSize);
+  return () => window.removeEventListener('resize', checkScreenSize);
+}, []);
   const messagesEndRef = useRef(null);
   const socketRef = useRef();
 
@@ -300,334 +317,257 @@ socketRef.current.emit('join-user', {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-100">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* 🔥 Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => navigate(-1)} 
-              className="p-2 hover:bg-white/50 rounded-xl transition-all"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <div className="flex items-center gap-3">
-              <MessageCircle className="w-12 h-12 bg-indigo-500 text-white p-3 rounded-2xl shadow-xl" />
-              <div>
-                <h1 className="text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Discussions
-                </h1>
-                <p className="text-xl text-gray-600 font-medium">{filteredRooms.length} rooms</p>
+      {/* 🔥 RESPONSIVE HEADER */}
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 sm:gap-8 mb-8 p-4 sm:p-0">
+  {/* Left: Back + Title */}
+  <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+    <button 
+      onClick={() => navigate(-1)} 
+      className="p-2.5 sm:p-3 hover:bg-white/50 rounded-2xl transition-all shadow-sm hover:shadow-md hover:scale-105 flex-shrink-0"
+    >
+      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+    </button>
+    
+    <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-3 sm:p-3.5 rounded-2xl shadow-2xl flex items-center justify-center flex-shrink-0">
+        <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7" />
+      </div>
+      <div className="min-w-0">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent leading-tight">
+          Discussions
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-600 font-semibold mt-1">
+          {filteredRooms.length} {filteredRooms.length === 1 ? 'room' : 'rooms'}
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  {/* 🔥 MOBILE-FULLWIDTH CREATE BUTTON */}
+  <button
+    onClick={() => setShowCreateModal(true)}
+    className="w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold px-6 sm:px-8 py-4 sm:py-4 rounded-3xl shadow-xl hover:shadow-2xl hover:scale-[1.05] transition-all duration-300 border border-white/20 text-base sm:text-lg h-14 sm:h-auto flex-shrink-0 group"
+  >
+    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform sm:w-6 sm:h-6" />
+    <span>Create Room</span>
+  </button>
+</div>
+  
+
+        {/* 🔥 MOBILE STACKED + DESKTOP GRID */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 h-screen lg:h-[75vh]">
+  
+  {/* 🔥 1️⃣ ROOM LIST - Full width mobile */}
+  <div className="md:col-span-1 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden h-80 md:h-full flex flex-col">
+    <div className="p-4 sm:p-6 border-b border-white/50 shrink-0">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-2 h-8 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
+        <h2 className="text-xl font-bold text-gray-900">Live Rooms</h2>
+      </div>
+      <div className="relative">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 sm:w-5 sm:left-4" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search rooms..."
+          className="w-full pl-10 sm:pl-12 pr-3 py-2.5 sm:py-3 bg-white/50 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 text-sm focus:border-transparent transition-all"
+        />
+      </div>
+    </div>
+    
+    <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 md:space-y-3">
+      {loading ? (
+        <div className="space-y-2">
+          {[1,2,3].map(i => (
+            <div key={i} className="animate-pulse bg-gray-200 h-16 sm:h-20 rounded-xl"></div>
+          ))}
+        </div>
+      ) : filteredRooms.length > 0 ? (
+        filteredRooms.slice(0, 5).map(room => (  // 👈 Limit for mobile
+          <div
+            key={room._id}
+            onClick={() => handleRoomClick(room)}
+            className={`p-3 sm:p-4 sm:p-5 rounded-xl cursor-pointer transition-all group hover:shadow-lg border hover:border-indigo-300 hover:scale-[1.01] backdrop-blur-sm h-16 sm:h-auto ${
+              selectedRoom?._id === room._id
+                ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-indigo-300 shadow-indigo-200 ring-2 ring-indigo-500/30'
+                : 'bg-white/60 border-gray-200 hover:bg-indigo-50'
+            }`}
+          >
+            <div className="flex items-center gap-3 h-full">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-lg sm:text-xl flex-shrink-0 shadow-lg">
+                {room.name[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-sm sm:text-lg text-gray-900 group-hover:text-indigo-700 truncate mb-0.5 sm:mb-1">
+                  {room.name}
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-500 truncate">{room.subject}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                <span className="text-xs font-semibold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-md sm:px-2 sm:py-1">
+                  {room.memberCount}
+                </span>
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               </div>
             </div>
           </div>
-          
-          {/* 🔥 Create Room Button */}
+        ))
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+          <p className="text-sm font-medium">No rooms</p>
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* 🔥 2️⃣ CHAT - Full width mobile, center desktop */}
+  <div className="md:col-span-1 lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden h-96 md:h-[60vh] lg:h-full flex flex-col">
+    {/* Header */}
+    <div className="p-4 sm:p-6 border-b border-white/50 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 shrink-0">
+      {selectedRoom ? (
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg flex-shrink-0 mt-1 sm:mt-0">
+            {selectedRoom.name[0].toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{selectedRoom.name}</h2>
+            <p className="text-xs sm:text-sm text-gray-600 truncate">{selectedRoom.subject}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">
+                {selectedRoom.memberCount || 0} online
+              </span>
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 sm:py-12">
+          <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-1">Select Room</h2>
+          <p className="text-sm text-gray-600">Choose from left</p>
+        </div>
+      )}
+    </div>
+
+    {/* Messages */}
+    <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 min-h-0">
+      {selectedRoom && messages.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
+          <h3 className="text-lg font-bold mb-1 text-gray-900">No messages</h3>
+          <p className="text-sm">Start conversation!</p>
+        </div>
+      ) : selectedRoom ? (
+        messages.map((message, index) => {
+          const sender = message.sender || {};
+          const isOwnMessage = sender._id === userId;
+          const senderName = sender.fullname || sender.username || 'Anonymous';
+
+          return (
+            <div key={message._id || `msg-${index}`} className={`flex gap-2 ${isOwnMessage ? 'justify-end' : ''}`}>
+              {!isOwnMessage && (
+                <img 
+                  src={sender.avatar} 
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-white/50 shadow-md flex-shrink-0 mt-1"
+                  alt={senderName}
+                  onError={(e) => e.target.src = 'https://via.placeholder.com/32x32/6B7280/FFFFFF?text=👤'}
+                />
+              )}
+              <div className={`max-w-[85%] px-3 py-2.5 sm:px-4 sm:py-3 rounded-2xl shadow-lg ${isOwnMessage ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white' : 'bg-white border border-gray-200 text-gray-900'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-xs sm:text-sm truncate">{senderName}</span>
+                  <span className="text-xs opacity-75">{new Date(message.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+                <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
+              </div>
+            </div>
+          );
+        })
+      ) : null}
+      <div ref={messagesEndRef} />
+    </div>
+
+    {/* Input */}
+    {selectedRoom && (
+      <form onSubmit={sendMessage} className="p-3 sm:p-6 border-t border-white/50 bg-white/50 shrink-0">
+        <div className="flex items-end gap-2">
+          <input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type message..."
+            className="flex-1 px-3 py-2.5 sm:px-5 sm:py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 text-sm focus:border-transparent transition-all"
+          />
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="group flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold px-8 py-4 rounded-3xl shadow-xl hover:shadow-2xl hover:scale-[1.05] transition-all duration-300 border border-white/20"
+            type="submit"
+            disabled={!newMessage.trim()}
+            className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center disabled:opacity-50"
           >
-            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            Create Room
+            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
           </button>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-[75vh]">
-          {/* 🔥 Left: Room List */}
-          <div className="lg:col-span-1 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
-            <div className="p-6 border-b border-white/50">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-2 h-10 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
-                <h2 className="text-2xl font-bold text-gray-900">Live Rooms</h2>
-              </div>
-              <div className="relative mb-4">
-                <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search discussions..."
-                  className="w-full pl-12 pr-4 py-3 bg-white/50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-              </div>
-            </div>
-            
-            <div className="h-full overflow-y-auto p-4 space-y-3">
-              {loading ? (
-                <div className="space-y-3">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="animate-pulse bg-gray-200 h-24 rounded-2xl"></div>
-                  ))}
-                </div>
-              ) : filteredRooms.length > 0 ? (
-                filteredRooms.map(room => (
-                  <div
-                    key={room._id}
-                    onClick={() => handleRoomClick(room)}
-                    className={`p-5 rounded-2xl cursor-pointer transition-all group hover:shadow-xl border hover:border-indigo-300 hover:scale-[1.02] backdrop-blur-sm ${
-                      selectedRoom?._id === room._id
-                        ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-indigo-300 shadow-indigo-200 ring-2 ring-indigo-500/30 scale-[1.02]'
-                        : 'bg-white/60 border-gray-200 hover:bg-indigo-50'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg">
-                        {room.name[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-700 truncate mb-1">
-                          {room.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-2">{room.subject}</p>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="font-semibold bg-indigo-100 text-indigo-800 px-2 py-1 rounded-lg">
-                            {room.memberCount} members
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span className="text-emerald-700 font-medium">Live</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-16 text-gray-500">
-                  <Users className="w-20 h-20 mx-auto mb-6 opacity-30" />
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">No Discussions Yet</h3>
-                  <p className="mb-6">Be the first to create one!</p>
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 mx-auto bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Create Discussion
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 🔥 Chat Area (same as before) */}
-          {/* 🔥 Chat Area */}
-<div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col">
-  {/* Header */}
-  <div className="p-6 border-b border-white/50 bg-gradient-to-r from-indigo-500/10 to-purple-500/10">
-    {selectedRoom ? (
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
-          {selectedRoom.name[0].toUpperCase()}
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 truncate">{selectedRoom.name}</h2>
-          <p className="text-sm text-gray-600">{selectedRoom.subject}</p>
-          <div className="flex items-center gap-4 mt-1">
-            <span className="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-medium">
-              {selectedRoom.memberCount || 0} members online
-            </span>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-emerald-700">Live</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div className="text-center py-12">
-        <MessageCircle className="w-24 h-24 mx-auto mb-6 text-gray-400" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Select a Discussion</h2>
-        <p className="text-gray-600">Choose a room from the left to start chatting</p>
-      </div>
+      </form>
     )}
   </div>
 
-  {/* Messages */}
-    {/* Messages */}
-     {/* Messages - EXACTLY LIKE POSTCARD */}
-<div className="flex-1 overflow-y-auto p-6 space-y-4">
-  {selectedRoom && messages.length === 0 ? (
-    <div className="text-center py-20 text-gray-500">
-      <MessageCircle className="w-24 h-24 mx-auto mb-6 opacity-30" />
-      <h3 className="text-xl font-bold mb-2 text-gray-900">No messages yet</h3>
-      <p>Be the first to start the conversation!</p>
+  {/* 🔥 3️⃣ ACTIVE MEMBERS - Full width mobile, right desktop */}
+  <div className="lg:col-span-1 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden h-80 lg:h-full flex flex-col">
+    <div className="p-4 sm:p-6 border-b border-white/50 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 shrink-0">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="w-2 h-8 bg-gradient-to-b from-emerald-500 to-teal-600 rounded-full"></div>
+        <h2 className="text-xl font-bold text-gray-900">Active Members</h2>
+      </div>
+      <p className="text-xs sm:text-sm text-gray-600">Live now</p>
     </div>
-  ) : selectedRoom ? (
-    messages.map((message, index) => {
-      const sender = message.sender || {};
-      const senderId = sender._id;
-      const isOwnMessage = senderId === userId;
-      const senderName = sender.fullname || sender.username || 'Anonymous';
-      const senderAvatar = sender.avatar;
-      const senderBranch = sender.branch;
-      const senderSemester = sender.semester;
 
-      return (
-        <div key={message._id || `msg-${index}`} className={`flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-          {!isOwnMessage && (
-            <img 
-              src={senderAvatar} 
-              className="w-10 h-10 rounded-full ring-2 ring-white/50 shadow-md flex-shrink-0 mt-2"
-              alt={senderName}
-              onError={(e) => e.target.src = 'https://via.placeholder.com/40x40/6B7280/FFFFFF?text=👤'}
-            />
-          )}
-          <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-3xl shadow-lg ${isOwnMessage ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white ml-12' : 'bg-white border border-gray-200 text-gray-900'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="space-y-0.5">
-                <span className="font-bold text-sm truncate">{senderName}</span>
-                {senderBranch && senderSemester && (
-                  <div className="flex items-center gap-2 text-xs text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">
-                    <span>{senderBranch}</span>
-                    <span>• {senderSemester} Sem</span>
-                  </div>
+    <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+      {selectedRoom ? (
+        selectedRoom.participants?.length > 0 ? (
+          selectedRoom.participants.slice(0, 8).map((participant) => {  // 👈 Limit mobile
+            const isYou = participant._id === userId;
+            return (
+              <div key={participant._id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all group cursor-pointer mb-2 border border-gray-100 hover:border-indigo-200">
+                <img 
+                  src={participant.avatar} 
+                  className="w-10 h-10 rounded-xl ring-2 ring-white/50 shadow-lg flex-shrink-0 object-cover"
+                  alt={participant.fullname}
+                  onError={(e) => e.target.src = 'https://via.placeholder.com/40x40/6B7280/FFFFFF?text=👤'}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-gray-900 truncate group-hover:text-indigo-700">
+                    {participant.fullname || participant.username}
+                  </p>
+                  {participant.branch && (
+                    <p className="text-xs text-gray-500 truncate">{participant.branch} • {participant.semester} Sem</p>
+                  )}
+                </div>
+                {isYou && (
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse ml-auto"></div>
                 )}
               </div>
-              <span className="text-xs opacity-75">
-                {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            <p className="text-sm leading-relaxed">{message.content}</p>
+            );
+          })
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+            <p className="text-sm">No members</p>
           </div>
-          {isOwnMessage && (
-            <img 
-              src={safeStorage.getItem('user')?.avatar || 'https://via.placeholder.com/40x40/6B7280/FFFFFF?text=👤'}
-              className="w-10 h-10 rounded-full ring-2 ring-indigo-500/50 shadow-md flex-shrink-0 mt-2"
-              alt="You"
-            />
-          )}
+        )
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <Users2 className="w-16 h-16 mx-auto mb-4 opacity-30" />
+          <p className="text-sm">Select room</p>
         </div>
-      );
-    })
-  ) : null}
-  <div ref={messagesEndRef} />
-</div>
-
-  {/* Input */}
-  {selectedRoom && (
-    <form onSubmit={sendMessage} className="p-6 border-t border-white/50 bg-white/50">
-      <div className="flex items-end gap-3">
-        <input
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
-          className="flex-1 px-5 py-4 border border-gray-200 rounded-3xl focus:ring-3 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
-          onKeyPress={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              sendMessage(e);
-            }
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!newMessage.trim()}
-          className="w-14 h-14 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-3xl shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
-        </button>
-      </div>
-    </form>
-  )}
-</div>
-
-       {/* 🔥 Right Panel - Active Users */}
-<div className="lg:block hidden bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col">
-  {/* Header */}
-  <div className="p-6 border-b border-white/50 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
-    <div className="flex items-center gap-3 mb-2">
-      <div className="w-2 h-10 bg-gradient-to-b from-emerald-500 to-teal-600 rounded-full"></div>
-      <h2 className="text-xl font-bold text-gray-900">Active Members</h2>
+      )}
     </div>
-    <p className="text-sm text-gray-600">Live in this room</p>
   </div>
-
-  {/* Members List */}
-    {/* Members List */}
-{/* <div className="flex-1 overflow-y-auto p-4">
-  {selectedRoom ? (
-    selectedRoom.participants && selectedRoom.participants.length > 0 ? (
-      selectedRoom.participants.map((participant) => {
-        // 🔥 SAFE ACCESS - Handle missing username/name
-        const username = participant.username || participant.name || 'User';
-        
-        return (
-          <div key={participant._id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 transition-all group cursor-pointer mb-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
-              {username[0].toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 truncate group-hover:text-indigo-700">
-                {username}
-              </p>
-              <p className="text-xs text-gray-500">Online</p>
-            </div>
-            {participant._id === userId && (
-              <div className="w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
-            )}
-          </div>
-        );
-      })
-    ) : (
-      <div className="text-center py-12 text-gray-500">
-        <Users className="w-16 h-16 mx-auto mb-4 opacity-30" />
-        <p className="text-sm">No members yet</p>
-      </div>
-    )
-  ) : (
-    <div className="text-center py-16 text-gray-500">
-      <Users2 className="w-20 h-20 mx-auto mb-6 opacity-30" />
-      <h3 className="text-lg font-bold mb-2 text-gray-900">Select a Room</h3>
-      <p className="text-sm">Choose a discussion to see active members</p>
-    </div>
-  )}
-</div> */}
-{/* Members List */}
-<div className="flex-1 overflow-y-auto p-4">
-  {selectedRoom ? (
-    selectedRoom.participants?.length > 0 ? (
-      selectedRoom.participants.map((participant) => {
-        const isYou = participant._id === userId;
-        return (
-          <div key={participant._id} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-gray-50 transition-all group cursor-pointer mb-2 border border-gray-100 hover:border-indigo-200 hover:shadow-md">
-            <img 
-              src={participant.avatar} 
-              className="w-12 h-12 rounded-2xl ring-2 ring-white/50 shadow-lg flex-shrink-0 object-cover"
-              alt={participant.fullname}
-              onError={(e) => e.target.src = 'https://via.placeholder.com/48x48/6B7280/FFFFFF?text=👤'}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900 truncate group-hover:text-indigo-700">
-                {participant.fullname || participant.username}
-              </p>
-              {participant.branch && participant.semester && (
-                <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                  <span>{participant.branch}</span>
-                  <span>• {participant.semester} Sem</span>
-                </div>
-              )}
-            </div>
-            {isYou && (
-              <div className="w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse ml-auto"></div>
-            )}
-          </div>
-        );
-      })
-    ) : (
-      <div className="text-center py-12 text-gray-500">
-        <Users className="w-16 h-16 mx-auto mb-4 opacity-30" />
-        <p className="text-sm">No members yet</p>
-      </div>
-    )
-  ) : (
-    // Empty state
-    <div className="text-center py-16 text-gray-500">
-      <Users2 className="w-20 h-20 mx-auto mb-6 opacity-30" />
-      <h3 className="text-lg font-bold mb-2 text-gray-900">Select a Room</h3>
-      <p className="text-sm">Choose a discussion to see active members</p>
-    </div>
-  )}
 </div>
-</div>
-        </div>
       </div>
+      
 
       {/* 🔥 CREATE ROOM MODAL */}
       {showCreateModal && (
@@ -754,4 +694,6 @@ socketRef.current.emit('join-user', {
       )}
     </div>
   );
+
+
 }

@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Bell, TrendingUp, Users, Eye, BookOpen, Download, ChevronRight, CheckCircle , AlertTriangle
@@ -78,31 +76,19 @@ export default function RightSidebar() {
   }, [token]);
 
   // 🔥 WEBSOCKET SETUP
-  useEffect(() => {
-    if (!userId || !token) return;
+    // 🔥 WEBSOCKET SETUP (Lines 90-150) - FIXED
+useEffect(() => {
+  if (!userId || !token) return;
 
-    // Connect socket
-    socketRef.current = io(`${import.meta.env.VITE_API_URL}`, {
-      auth: { token },
-       transports: ['websocket', 'polling']
-
-    });
-
-    socketRef.current.emit('join-user', userId);
-
-    // 🔥 INSTANT NOTIFICATION
-    socketRef.current.on('new-notification', (notification) => {
-      setNotifications(prev => [notification, ...prev]);
-      setNotificationCount(prev => prev + 1);
-
-       // 🔥 ADD THESE 2 MISSING LISTENERS:
-         // 🔥 ADD THESE 2 MISSING LISTENERS:
-       
-         socketRef.current.on('active-users-update', () => {
-    console.log('🔄 Refreshing active users...');
-    fetchData();  // ✅ Auto-refresh active users
+  socketRef.current = io(`${import.meta.env.VITE_API_URL}`, {
+    auth: { token },
+    transports: ['websocket', 'polling'],
+    path: '/socket.io/'
   });
 
+  socketRef.current.emit('join-user', userId);
+
+  // ✅ FIX 1: Move ALL listeners OUTSIDE each other
   socketRef.current.on('connect', () => {
     console.log('✅ Socket connected!');
   });
@@ -110,37 +96,47 @@ export default function RightSidebar() {
   socketRef.current.on('disconnect', () => {
     console.log('❌ Socket disconnected');
   });
-  
-      
-      // 🔥 TOAST NOTIFICATION
-      toast(
-        <>
-          <div className="font-semibold">{notification.title}</div>
-          <div className="text-sm opacity-90">{notification.text}</div>
-        </>,
-        {
-          duration: 5000,
-          position: 'top-right',
-          icon: <Bell className="w-5 h-5 text-blue-500" />,
-          style: {
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            backdropFilter: 'blur(10px)'
-          }
-        }
-      );
-    });
 
-    // Initial load
+  socketRef.current.on('active-users-update', () => {
+    console.log('🔄 Refreshing active users...');
     fetchData();
+  });
 
-    // Refresh every 2min
-    const interval = setInterval(fetchData, 120000);
-    return () => {
-      clearInterval(interval);
-      socketRef.current?.disconnect();
+  // ✅ FIX 2: Format WebSocket notification time
+  socketRef.current.on('new-notification', (notification) => {
+    // console.log('🔔 Raw notification:', notification);
+    console.log('🔥 RAW SOCKET DATA:', JSON.stringify(notification, null, 2));
+  console.log('createdAt:', notification.createdAt);
+  console.log('time:', notification.time);
+  console.log('typeof createdAt:', typeof notification.createdAt);
+    
+    // ✅ Format time for WebSocket notifications
+    const formattedNotification = {
+      ...notification,
+      time: formatTime(notification.createdAt || notification.time)
     };
-  }, [userId, token, fetchData]);
+    
+    setNotifications(prev => [formattedNotification, ...prev]);
+    setNotificationCount(prev => prev + 1);
+
+    // 🔥 TOAST
+    toast(
+      <>
+        <div className="font-semibold">{notification.title}</div>
+        <div className="text-sm opacity-90">{notification.text}</div>
+      </>,
+      { /* toast config */ }
+    );
+  });
+
+  fetchData();
+  const interval = setInterval(fetchData, 120000);
+  
+  return () => {
+    clearInterval(interval);
+    socketRef.current?.disconnect();
+  };
+}, [userId, token, fetchData]);
 
   // 🔥 MARK ALL READ
   const markAllRead = async () => {

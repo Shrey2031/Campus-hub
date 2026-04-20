@@ -60,55 +60,6 @@ export default function CreatePost() {
     document.getElementById('file-upload').value = '';
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   if (!text.trim() && !file) return;
-
-  //   setIsSubmitting(true);
-  //    const token = localStorage.getItem('token');
-
-  //      console.log('🔑 CREATE POST TOKEN:', token ? 'FOUND' : 'MISSING');
-
-  //   try {
-  //     const postData = new FormData();
-  //     postData.append('content', text);
-  //     postData.append('subject', subject);
-  //     postData.append('type', postType);
-  //     if (file) {
-  //       postData.append('file', file);
-  //     }
-
-    
-  //     const response = await axios.post(`${API_BASE_URL}/posts/create-post`, postData, {
-  //       headers: {
-  //         'Authorization': `Bearer ${token}`,
-  //         // 'Content-Type': 'multipart/form-data'
-  //       }
-  //     });
-
-  //     console.log('✅ Post created:', response.data);
-  //      alert('Post created successfully! 🎉');
-  //   window.location.reload();
-
-  //     // Reset form
-  //     setText('');
-  //     setSubject('');
-  //     setPostType('question');
-  //     setFile(null);
-  //     setFilePreview(null);
-  //     setIsFocused(false);
-
-  //     // Show success & refresh posts
-  //     alert('Post created successfully! 🎉');
-  //     window.location.reload(); // Refresh to show new post
-      
-  //   } catch (error) {
-  //     console.error('❌ Post error:', error.response?.data);
-  //     alert(error.response?.data?.message || 'Failed to create post');
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
   const handleSubmit = async (e) => {
   e.preventDefault();
   if (!text.trim() && !file) return;
@@ -264,7 +215,7 @@ export default function CreatePost() {
           </div>
 
           {/* Post Button */}
-          <button 
+          {/* <button 
             type="submit"
             disabled={isSubmitting || !text.trim() && !file}
             className={`
@@ -290,7 +241,39 @@ export default function CreatePost() {
                 <Send className="w-5 h-5 translate-x-0 group-hover:translate-x-1 transition-all" />
               </>
             )}
-          </button>
+          </button> */}
+
+          <button 
+  type="submit"
+  disabled={isSubmitting || !text.trim() && !file}
+  className={`
+    flex items-center justify-center gap-2 sm:gap-3 
+    px-6 sm:px-8 py-3 sm:py-4 
+    text-sm sm:text-lg font-bold rounded-3xl 
+    transition-all duration-300 shadow-2xl hover:shadow-3xl hover:shadow-indigo-500/30
+    backdrop-blur-xl border border-transparent hover:border-indigo-300
+    w-full sm:w-auto h-12 sm:h-auto
+    ${text.trim() || file
+      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 hover:scale-105 shadow-indigo-500/50 hover:shadow-indigo-500/60 ring-4 ring-indigo-500/20'
+      : 'bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed shadow-gray-300/50 ring-2 ring-gray-300/50'
+    }
+    ${isSubmitting ? 'opacity-75 cursor-not-allowed animate-pulse' : ''}
+  `}>
+  {isSubmitting ? (
+    <>
+      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+      <span className="hidden sm:inline">Posting...</span>
+      <span className="sm:hidden">Posting...</span>
+    </>
+  ) : (
+    <>
+      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 hover:rotate-180 transition-all flex-shrink-0" />
+      <span className="hidden sm:inline">Post Doubt ✨</span>
+      <span className="sm:hidden">Post</span>
+      <Send className="w-4 h-4 sm:w-5 sm:h-5 translate-x-0 group-hover:translate-x-1 transition-all flex-shrink-0" />
+    </>
+  )}
+</button>
         </div>
       </div>
     </form>

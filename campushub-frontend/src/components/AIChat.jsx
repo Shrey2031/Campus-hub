@@ -22,39 +22,7 @@ const AIChat = () => {
     scrollToBottom();
   }, [chatHistory]);
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!question.trim()) return;
 
-//     const userQuestion = question;
-//     setLoading(true);
-
-//     // Add user message
-//     setChatHistory(prev => [...prev, { type: 'user', text: userQuestion }]);
-//     setQuestion('');
-
-//     try {
-//       const response = await axios.post(`${API_URL}/api/v1/ai/ask`, {
-//         question: userQuestion
-//       }, {
-//         timeout: 30000 // 30s timeout
-//       });
-
-//       if (response.data.success) {
-//         setChatHistory(prev => [...prev, { type: 'ai', text: response.data.answer }]);
-//       } else {
-//         setChatHistory(prev => [...prev, { type: 'error', text: response.data.error }]);
-//       }
-//     } catch (error) {
-//       console.error('AI Chat Error:', error);
-//       setChatHistory(prev => [...prev, { 
-//         type: 'error', 
-//         text: error.response?.data?.error || 'Failed to connect to AI service' 
-//       }]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
 
 const handleSubmit = async (e) => {
   e.preventDefault();

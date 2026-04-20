@@ -22,28 +22,7 @@ app.get("/", (req, res) => {
 
 app.use(express.json());
 
-// app.post("/ai", async (req, res) => {
-//   const { prompt } = req.body;
 
-//   const reply = await runGemini(prompt);
-
-//   res.json({ reply });
-// });
-
-// import { GoogleGenAI } from "@google/genai";
-
-// // The client gets the API key from the environment variable `GEMINI_API_KEY`.
-// const ai = new GoogleGenAI({});
-
-// async function main() {
-//   const response = await ai.models.generateContent({
-//     model: "gemini-3-flash-preview",
-//     contents: "what is capital of india",
-//   });
-//   console.log(response.text);
-// }
-
-// main();
 
 //route declaration
 import userRoutes from "./routes/user.routes.js";
