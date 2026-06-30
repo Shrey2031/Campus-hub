@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
       if (token) {
         try {
           // Verify token and get user
-          const response = await axios.get(`${API_BASE_URL}/auth/profile`, {
+          const response = await axios.get(`${API_BASE_URL}/v1/users/crrent-user`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
