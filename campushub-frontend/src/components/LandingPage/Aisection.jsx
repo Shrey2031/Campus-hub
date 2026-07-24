@@ -20,7 +20,7 @@ const Aisection = () => {
             keep asking "wait, why though?"
           </p>
           <a
-            href="/signup"
+            href="/auth"
             className="inline-flex items-center gap-2 bg-highlighter text-ink font-body font-semibold px-6 py-3.5 rounded hover:bg-paper transition-colors"
           >
             Ask Gemini AI now →

@@ -11,7 +11,7 @@ const Cta = () => {
           Create an account in under a minute. No fee, no catch.
         </p>
         <a
-          href="/signup"
+          href="/auth"
           className="inline-flex items-center gap-2 bg-highlighter text-ink font-body font-semibold px-8 py-4 rounded hover:bg-paper transition-colors"
         >
           Get started for free

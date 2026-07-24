@@ -3,7 +3,7 @@ import { ArrowRight, PlayCircle } from "lucide-react";
 // Swap this to an actual screenshot of your app (e.g. the feed/dashboard
 // view) — a real product screenshot lands much better here than an
 // abstract graphic. Save it in src/assets and update the path below.
-import heroImg from "../../assets/hero.png";
+import heroImg from "../../assets/herop.png";
 
 const Hero = () => {
   return (
@@ -31,14 +31,14 @@ const Hero = () => {
 
           <div className="flex flex-wrap items-center gap-4">
             <a
-              href="/signup"
+              href="/auth"
               className="group flex items-center gap-2 bg-ink text-paper font-body font-semibold px-6 py-3.5 rounded hover:bg-redpen transition-colors"
             >
               Get started — it's free
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </a>
             <a
-              href="#ai"
+              href="auth"
               className="flex items-center gap-2 font-body font-medium text-ink px-2 py-3.5 border-b-2 border-ink/30 hover:border-redpen hover:text-redpen transition-colors"
             >
               <PlayCircle size={18} />
