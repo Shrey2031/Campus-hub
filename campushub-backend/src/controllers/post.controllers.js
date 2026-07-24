@@ -1,75 +1,11 @@
-
+import { v2 as cloudinary } from 'cloudinary';
 import { User } from '../models/user.model.js';
-import {Post} from '../models/post.model.js';
-import { upload } from '../middleware/multer.middleware.js'; // Your existing multer
-import { uploadOnCloudinary } from '../utils/cloudinary.js'; // Your existing cloudinary
-import { createNotification } from './notification.controller.js'; // For notifications
+import { Post } from '../models/post.model.js';
+import { upload } from '../middleware/multer.middleware.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import { createNotification } from './notification.controller.js';
+import axios from 'axios';
 
-
-// 🟢 CREATE POST
-// export const createPost = [
-//   upload.single('file'),
-//   async (req, res) => {
-//     try {
-//       console.log('🔍 Handler - req.user:', req.user?.id);
-//       const { content, subject, type } = req.body;
-//       const userId = req.user.id;
-
-//       let fileData = null;
-
-//       // Handle file upload
-//       if (req.file) {
-//         const cloudinaryResponse = await uploadOnCloudinary(req.file.path);
-        
-//         if (cloudinaryResponse) {
-//           fileData = {
-//             url: cloudinaryResponse.secure_url,
-//             public_id: cloudinaryResponse.public_id,
-//             fileType: req.file.mimetype.split('/')[1] || 'unknown',
-//             fileName: req.file.originalname
-//           };
-//         }
-//       }
-
-//       const post = new Post({
-//         content,
-//         subject,
-//         type: type || 'question',
-//         createdBy: userId,
-//         file: fileData,
-//         views: 1
-//       });
-
-//       await post.save();
-
-//       // 🔥 INCREMENT USER'S POST COUNT
-//       await User.findByIdAndUpdate(
-//         userId,
-//         { 
-//           $inc: { postCount: 1 } // Increment by 1
-//         },
-//         { new: true }
-//       );
-
-//       // Populate post data
-//       await post.populate('createdBy', 'name avatar email postCount');
-
-//       res.status(201).json({
-//         success: true,
-//         message: 'Post created successfully!',
-//         post,
-//         userPostCount: post.createdBy.postCount // Current count (e.g., 2)
-//       });
-
-//     } catch (error) {
-//       res.status(500).json({
-//         success: false,
-//         message: error.message
-//       });
-//     }
-//   }
-// ];
-// 🔥 NEW RESOURCE-ONLY CONTROLLER
 export const createPost = [
   upload.single('file'),
   async (req, res) => {
@@ -79,42 +15,41 @@ export const createPost = [
 
       let fileData = null;
 
-      // Handle file upload
       if (req.file) {
+  
         const cloudinaryResponse = await uploadOnCloudinary(req.file.path);
-        
+
         if (cloudinaryResponse) {
           fileData = {
             url: cloudinaryResponse.secure_url,
             public_id: cloudinaryResponse.public_id,
+            // Needed so deletePost can correctly clean this up later —
+            // Cloudinary's destroy() requires the actual resource type
+            // ('image'/'raw'/'video'), not 'auto'.
+            resourceType: cloudinaryResponse.resource_type,
             fileType: req.file.mimetype.split('/')[1] || 'unknown',
             fileName: req.file.originalname
           };
         }
       }
 
-      // 🔥 PERFECT FOR YOUR MODEL
       const postData = {
-        content: title || content, // ✅ title for resources, content for questions
+        content: (type === 'resource' && title) ? title : (title || content),
         subject,
-        type, // ✅ 'resource', 'question', 'discussion'
+        type,
         createdBy: userId,
         file: fileData,
         views: 1
       };
 
-      // 🔥 RESOURCE-SPECIFIC FIELDS (optional but nice)
-      if (type === 'resource' && title) {
-        postData.content = title; // Use title as content for resources
-      }
-
       const post = new Post(postData);
       await post.save();
 
-      // Increment user post count
-      await User.findByIdAndUpdate(userId, { $inc: { postCount: 1 } });
 
-      await post.populate('createdBy', 'fullname avatar username branch semester postCount');
+      const counterField = type === 'resource' ? 'resourcesCount' : 'postCount';
+      await User.findByIdAndUpdate(userId, { $inc: { [counterField]: 1 } });
+
+      await post.populate('createdBy', 'fullname avatar username branch semester');
 
       res.status(201).json({
         success: true,
@@ -131,32 +66,15 @@ export const createPost = [
   }
 ];
 
-// ✅ Add this helper
-function getFileIcon(mimeType) {
-  const icons = {
-    'pdf': '📄',
-    'doc': '📝', 
-    'docx': '📝',
-    'zip': '📦',
-    'rar': '📦',
-    'ppt': '📊',
-    'pptx': '📊'
-  };
-  return icons[mimeType.split('/')[1]] || '📎';
-}
-
-
-
 export const getAllPosts = async (req, res) => {
   try {
     const { page = 1, limit = 10, type, search } = req.query;
     const skip = (page - 1) * limit;
 
     let filter = {
-      type: { $in: ['question', 'discussion'] } // 🔥 EXCLUDE RESOURCES BY DEFAULT
+      type: { $in: ['question', 'discussion'] }
     };
 
-    // 🔥 Allow explicit type override (for special cases)
     if (type) {
       if (type === 'resource') {
         return res.status(400).json({
@@ -164,7 +82,7 @@ export const getAllPosts = async (req, res) => {
           message: 'Use /resources endpoint for resource posts'
         });
       }
-      filter.type = type; // Only allow 'question' or 'discussion'
+      filter.type = type;
     }
 
     if (search) {
@@ -175,7 +93,7 @@ export const getAllPosts = async (req, res) => {
     }
 
     const posts = await Post.find(filter)
-      .populate('createdBy', 'name fullname username branch semester avatar email')
+      .populate('createdBy', 'fullname username branch semester avatar email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -203,42 +121,13 @@ export const getAllPosts = async (req, res) => {
   }
 };
 
-// export const getAllPosts = async (req, res) => {
-//   try {
-//     const { page = 1, limit = 10 } = req.query;
-    
-//     // 🔥 Only show question and discussion posts (exclude resources)
-//     const filter = {
-//       type: { $in: ['question', 'discussion'] }, // ✅ Exclude resources
-//       isDeleted: false // ✅ Exclude deleted posts
-//     };
-    
-//     const posts = await Post.find(filter)
-//       .populate('createdBy', 'fullname username avatar branch semester')
-//       .populate('likes', 'fullname')
-//       .sort({ createdAt: -1 })
-//       .limit(limit * 1)
-//       .skip((page - 1) * limit);
-    
-//     res.json({
-//       posts,
-//       count: await Post.countDocuments(filter),
-//       currentPage: parseInt(page),
-//       totalPages: Math.ceil(await Post.countDocuments(filter) / limit)
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// 🟢 GET SINGLE POST
 export const getPost = async (req, res) => {
   try {
     const { id } = req.params;
 
     const post = await Post.findById(id)
-      .populate('createdBy', 'name avatar email branch semester fullname username')
-      .populate('likes', 'name avatar fullname username'); // Populate likes with user info
+      .populate('createdBy', 'avatar email branch semester fullname username')
+      .populate('likes', 'fullname username avatar');
 
     if (!post) {
       return res.status(404).json({
@@ -260,9 +149,6 @@ export const getPost = async (req, res) => {
   }
 };
 
-// 🔴 DELETE POST
-
-
 export const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
@@ -277,21 +163,22 @@ export const deletePost = async (req, res) => {
       });
     }
 
-    // ✅ USE YOUR EXISTING CLOUDINARY UTIL
     if (post.file?.public_id) {
       try {
-        // Method 1: If uploadOnCloudinary exports cloudinary instance
-        await uploadOnCloudinary.uploader.destroy(post.file.public_id, {
-          resource_type: 'auto'
+     
+        await cloudinary.uploader.destroy(post.file.public_id, {
+          resource_type: post.file.resourceType || 'image'
         });
         console.log('✅ Cloudinary file deleted');
       } catch (cloudinaryError) {
         console.warn('⚠️ Cloudinary delete failed:', cloudinaryError.message);
-        // Continue anyway!
       }
     }
 
     await Post.findByIdAndDelete(id);
+
+    const counterField = post.type === 'resource' ? 'resourcesCount' : 'postCount';
+    await User.findByIdAndUpdate(userId, { $inc: { [counterField]: -1 } });
 
     res.status(200).json({
       success: true,
@@ -307,53 +194,41 @@ export const deletePost = async (req, res) => {
   }
 };
 
-
-
-
 export const toggleLike = async (req, res) => {
   try {
-    const { id } = req.params;  // ✅ Post ID from route
+    const { id } = req.params;
     const userId = req.user._id;
 
-    console.log('🔍 Toggle like for post:', id, 'by user:', userId);
-
-    // ✅ 1. FIND POST FIRST (was missing!)
     const post = await Post.findById(id).populate('createdBy');
-    
+
     if (!post) {
-      console.log('❌ Post NOT found:', id);
       return res.status(404).json({
         success: false,
         message: 'Post not found!'
       });
     }
 
-    console.log('✅ Post found:', post._id, 'Current likes:', post.likes.length);
-
-    // 🔥 2. CREATE NOTIFICATION (only if NEW like & not author)
-    const userLikedIndex = post.likes.findIndex(likeId => 
+    const userLikedIndex = post.likes.findIndex(likeId =>
       likeId.toString() === userId.toString()
     );
 
-    if (userLikedIndex === -1) {  // NEW LIKE
-      if (post.createdBy._id.toString() !== userId) {
+    if (userLikedIndex === -1) {
+      
+      if (!post.createdBy._id.equals(userId)) {
         await createNotification(
           post.createdBy._id,
           `${req.user.fullname} liked your post`,
           `Someone liked "${post.subject || 'your post'}"`,
           'like',
-          post._id  // ✅ Use post._id (not undefined postId)
+          post._id
         );
       }
     }
 
-    // ✅ 3. TOGGLE LIKE/UNLIKE
     if (userLikedIndex > -1) {
-      // 🔥 UNLIKE
       post.likes.splice(userLikedIndex, 1);
       await post.save();
-      
-      console.log('👎 Unliked - New count:', post.likes.length);
+
       res.json({
         success: true,
         message: 'Post unliked!',
@@ -362,11 +237,9 @@ export const toggleLike = async (req, res) => {
         liked: false
       });
     } else {
-      // 🔥 LIKE
       post.likes.push(userId);
       await post.save();
-      
-      console.log('👍 Liked - New count:', post.likes.length);
+
       res.json({
         success: true,
         message: 'Post liked!',
@@ -385,128 +258,72 @@ export const toggleLike = async (req, res) => {
   }
 };
 
-// controllers/postController.js
-// export const getTrendingTopics = async (req, res) => {
-//   try {
-//     const trending = await Post.aggregate([
-//       {
-//         $match: { 
-//           subject: { $exists: true, $ne: null, $ne: "" },
-//           isDeleted: false  // Add this field if missing
-//         }
-//       },
-//       {
-//         $group: {
-//           _id: "$subject",
-//           postCount: { $sum: 1 },
-//           viewCount: { $sum: { $ifNull: ["$views", 0] } },  // Add views field
-//           resourceCount: { $sum: { $cond: [{ $eq: ["$type", "resource"] }, 1, 0] } }
-//         }
-//       },
-//       {
-//         $addFields: {
-//           score: { $add: [
-//             { $multiply: ["$postCount", 2] },
-//             { $divide: ["$viewCount", 50] },
-//             { $multiply: ["$resourceCount", 3] }
-//           ]}
-//         }
-//       },
-//       { $sort: { score: -1 } },
-//       { $limit: 15 },
-//       {
-//         $project: {
-//           _id: 0,
-//           topic: "$_id",
-//           posts: "$postCount",
-//           resources: "$resourceCount",
-//           views: "$viewCount",
-//           score: 1
-//         }
-//       }
-//     ]);
-
-//     res.json({
-//       success: true,
-//       topics: trending.map(t => t.topic)
-//     });
-//   } catch (error) {
-//     console.error('Trending error:', error);
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-// controllers/postController.js - ROBUST VERSION
 export const getTrendingTopics = async (req, res) => {
   try {
-    console.log('🔍 Fetching trending topics...');  // ✅ Debug
-
     const trending = await Post.aggregate([
-      // ✅ Try subject first, fallback to content words
       {
         $addFields: {
           topic: {
             $cond: {
               if: { $and: [{ $ne: ["$subject", null] }, { $ne: ["$subject", ""] }] },
               then: "$subject",
-              else: { 
+              else: {
                 $arrayElemAt: [
-                  { $split: [{ $ifNull: ["$content", ""] }, " "] }, 
-                  0 
+                  { $split: [{ $ifNull: ["$content", ""] }, " "] },
+                  0
                 ]
               }
             }
           }
         }
       },
-      { 
-        $match: { 
-          topic: { $ne: null, $ne: "", $ne: "undefined" },
-          isDeleted: { $ne: true }  // Skip deleted
-        } 
+      {
+        $match: {
+         
+          topic: { $nin: [null, "", "undefined"] },
+          isDeleted: { $ne: true }
+        }
       },
-      { 
-        $group: { 
-          _id: "$topic", 
+      {
+        $group: {
+          _id: "$topic",
           postCount: { $sum: 1 },
           samplePost: { $first: "$content" }
-        } 
+        }
       },
-      { $match: { postCount: { $gte: 1 } } },  // At least 1 post
+      { $match: { postCount: { $gte: 1 } } },
       { $sort: { postCount: -1 } },
       { $limit: 10 },
-      { 
-        $project: { 
-          _id: 0, 
-          topic: "$_id", 
-          posts: "$postCount" 
-        } 
+      {
+        $project: {
+          _id: 0,
+          topic: "$_id",
+          posts: "$postCount"
+        }
       }
     ]);
 
-    console.log(`📈 Trending found: ${trending.length} topics`);  // ✅ Debug
-
     res.json({
       success: true,
-      topics: trending.map(t => t.topic),
-      debug: trending  // Remove in production
+      topics: trending.map(t => t.topic)
     });
   } catch (error) {
     console.error('❌ Trending error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Trending failed',
-      error: error.message 
+      error: error.message
     });
   }
 };
 
 export const getTopResources = async (req, res) => {
-   try {
-    const { type = 'resource', limit = 8 } = req.query; // 🔥 Add type param
-    
+  try {
+    const { type = 'resource', limit = 8 } = req.query;
+
     const filter = {
-      file: { $exists: true, $ne: null }, // ✅ Has file
-      type: type === 'all' ? { $exists: true } : type // 🔥 Filter by type
+      file: { $exists: true, $ne: null },
+      type: type === 'all' ? { $exists: true } : type
     };
 
     const resources = await Post.find(filter)
@@ -516,73 +333,68 @@ export const getTopResources = async (req, res) => {
       .select('content file createdBy type views')
       .lean();
 
-    // const formatted = resources.map(post => ({
-    //   _id: post._id,
-    //   title: post.content.length > 40 
-    //     ? post.content.slice(0, 40) + '...' 
-    //     : post.content,
-    //   author: post.createdBy || { fullname: 'Anonymous' },
-    //   type: post.file?.fileType?.toUpperCase()?.split('/')[1] || 'FILE',
-    //   postType: post.type, // 🔥 Add post type
-    //   icon: post.file?.fileType?.includes('pdf') ? '📄' : 
-    //         post.file?.fileType?.includes('image') ? '🖼️' : '📎',
-    //   views: post.views || 0
-    // }));
+    const formatted = resources.map(post => {
 
-    // In getTopResources controller
-const formatted = resources.map(post => ({
-  _id: post._id,
-  title: post.content.length > 40 ? post.content.slice(0, 40) + '...' : post.content,
-  author: post.createdBy || { fullname: 'Anonymous' },
-  type: post.file?.fileType?.toUpperCase()?.split('/')[1] || 'FILE',
-  postType: post.type,
-  icon: post.file?.fileType?.includes('pdf') ? '📄' : 
-        post.file?.fileType?.includes('image') ? '🖼️' : '📎',
-  views: post.views || 0,
-  downloadUrl: `https://res.cloudinary.com/drhyudr2a/image/upload/fl_attachment/${post.file.public_id}`, // 🔥 ADD THIS
-  fileName: post.file.fileName // 🔥 ADD THIS
-}));
-    res.json({ 
-      success: true, 
+      const signedUrl = cloudinary.url(post.file.public_id, {
+        resource_type: post.file.resourceType || 'image',
+        type: 'upload',
+        format: post.file.fileType,
+        sign_url: true,
+        secure: true
+      });
+
+      return {
+        _id: post._id,
+        title: post.content.length > 40 ? post.content.slice(0, 40) + '...' : post.content,
+        author: post.createdBy || { fullname: 'Anonymous' },
+        type: post.file?.fileType?.toUpperCase()?.split('/')[1] || 'FILE',
+        postType: post.type,
+        icon: post.file?.fileType?.includes('pdf') ? '📄' :
+          post.file?.fileType?.includes('image') ? '🖼️' : '📎',
+        views: post.views || 0,
+        file: {
+          url: signedUrl,
+          fileName: post.file.fileName
+        },
+        downloadUrl: signedUrl,
+        fileName: post.file.fileName
+      };
+    });
+
+    res.json({
+      success: true,
       resources: formatted,
-      total: formatted.length 
+      total: formatted.length
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
- };
+};
 
-import axios from 'axios'; // npm install axios
- // Ensure: npm install axios
-
-// 🔥 PERFECT DOWNLOAD CONTROLLER
 export const downloadResource = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const post = await Post.findById(id).populate('createdBy');
+
+    const post = await Post.findById(id);
     if (!post?.file?.url) {
       return res.status(404).json({ success: false, message: 'File not found' });
     }
 
-    // 🔥 TRACK DOWNLOAD
-    await Post.findByIdAndUpdate(id, { 
+    await Post.findByIdAndUpdate(id, {
       $inc: { views: 1 },
-      $push: { downloaders: req.user.id }
+      $addToSet: { downloaders: req.user.id }
     });
 
-    // 🔥 FETCH FILE FROM CLOUDINARY
-    const response = await axios.get(post.file.url, {
-      responseType: 'arraybuffer'
-    });
+   
+    const response = await axios.get(post.file.url, { responseType: 'stream' });
 
-    // 🔥 SET PROPER HEADERS
     res.setHeader('Content-Type', post.file.fileType ? `application/${post.file.fileType}` : 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${post.file.fileName}"`);
-    res.setHeader('Content-Length', response.headers['content-length']);
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
 
-    // 🔥 SEND FILE
-    res.send(response.data);
+    response.data.pipe(res);
 
   } catch (error) {
     console.error('Download error:', error);
@@ -593,9 +405,9 @@ export const downloadResource = async (req, res) => {
 export const getUserPostsCount = async (req, res) => {
   try {
     const { userId } = req.query;
-    
+
     const count = await Post.countDocuments({
-      type: { $in: ['question', 'discussion'] }, // 🔥 Only posts (exclude resources)
+      type: { $in: ['question', 'discussion'] },
       createdBy: userId
     });
 
@@ -611,10 +423,10 @@ export const getUserPostsCount = async (req, res) => {
 export const getUserResourcesCount = async (req, res) => {
   try {
     const { userId } = req.query;
-    
+
     const count = await Post.countDocuments({
-      type: 'resource', // 🔥 Only resources
-      'file': { $exists: true, $ne: null }, // Has file
+      type: 'resource',
+      'file': { $exists: true, $ne: null },
       createdBy: userId
     });
 

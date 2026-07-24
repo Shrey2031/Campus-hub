@@ -10,7 +10,7 @@ import Footer from "../components/LandingPage/Footer";
 
 export default function App() {
   return (
-    <div className="min-h-screen font-sans">
+     <div className="bg-paper font-body">
       <Navbar />
       <Hero />
       <Stats />

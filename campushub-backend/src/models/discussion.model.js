@@ -1,8 +1,7 @@
-// models/DiscussionRoom.js
 import mongoose from 'mongoose';
 const discussionRoomSchema = new mongoose.Schema({
-  name: { type: String, required: true },     // "DSA Doubts", "OS Discussion"
-  subject: String,                            // "DSA", "OS"
+  name: { type: String, required: true },
+  subject: String,
   description: String,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

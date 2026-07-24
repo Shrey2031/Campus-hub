@@ -1,98 +1,71 @@
-const features = [
+import { motion } from "framer-motion";
+import { Rss, FileText, ScrollText, Sparkles, MessagesSquare } from "lucide-react";
+
+const periods = [
   {
-    icon: "📄",
-    title: "Share & Access Notes",
-    desc: "Upload your notes or explore high-quality notes shared by students like you.",
-    badge: null,
+    period: "Period 1",
+    icon: Rss,
+    title: "Doubt Feed",
+    desc: "Post a doubt with code or a screenshot — like a status update. Get comments, replies, and likes from students who've been there.",
+    span: true,
   },
   {
-    icon: "📚",
+        period: "Period 2",
+    icon: FileText,
+    title: "Notes & Resources",
+    desc: "Upload your notes, or grab high-quality ones shared by students in your subject.",
+  },
+  {
+    period: "Period 3",
+    icon: ScrollText,
     title: "PYQ Library",
-    desc: "Access a vast collection of previous year papers semester-wise and subject-wise.",
-    badge: null,
+    desc: "Previous year papers, sorted by semester and subject — no more scattered PDFs.",
   },
   {
-    icon: "✨",
+    period: "Period 4",
+    icon: Sparkles,
     title: "Ask Gemini AI",
-    desc: "Get instant, accurate answers to your questions with Gemini AI.",
-    badge: "New",
+    desc: "Stuck on a concept? Get an explanation with examples, not just a one-line definition.",
   },
   {
-    icon: "💬",
-    title: "Real-time Discussions",
-    desc: "Join live discussions, ask doubts, and collaborate in real-time with Socket.io.",
-    badge: "Live",
-  },
-  {
-    icon: "👥",
-    title: "Groups",
-    desc: "Create or join study groups based on your course, subject, or exam.",
-    badge: null,
-  },
-  {
-    icon: "❤️",
-    title: "Like & Comment",
-    desc: "Engage with posts, like helpful content, and comment to start conversations.",
-    badge: null,
-  },
-  {
-    icon: "🔖",
-    title: "Bookmarks",
-    desc: "Save important notes, PYQs, and posts for quick access anytime.",
-    badge: null,
-  },
-  {
-    icon: "🔍",
-    title: "Smart Search",
-    desc: "Find exactly what you need with powerful filters and smart search.",
-    badge: null,
+    period: "Period 5",
+    icon: MessagesSquare,
+    title: "Live Discussions",
+    desc: "Real-time, subject-wise chat rooms — see who's online and ask right now.",
   },
 ];
 
-export default function Features() {
+const Features = () => {
   return (
-    <section className="bg-white py-20">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Header */}
-        <div className="text-center mb-14">
-          <span className="text-indigo-600 text-sm font-semibold tracking-widest uppercase">
-            Everything you need
-          </span>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">
-            All-in-one platform for every learner
-          </h2>
-          <p className="text-gray-500 mt-3 text-base max-w-xl mx-auto">
-            Access learning resources, get AI help, and connect with peers—anytime, anywhere.
-          </p>
-        </div>
+    <section id="features" className="bg-paper py-24 border-b-2 border-dashed border-ink/20">
+      <div className="max-w-6xl mx-auto px-6">
+        <p className="font-mono text-xs tracking-widest text-redpen uppercase mb-3">Your day, timetabled</p>
+        <h2 className="font-display font-bold text-ink text-3xl md:text-4xl max-w-xl mb-16">
+          Everything you'd otherwise have four different tabs open for.
+        </h2>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map(({ icon, title, desc, badge }) => (
-            <div
+        <div className="grid md:grid-cols-2 gap-px bg-ink/15 border border-ink/15">
+          {periods.map(({ period, icon: Icon, title, desc, span }, i) => (
+            <motion.div
               key={title}
-              className="relative bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer group"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              className={`bg-paper p-8 hover:bg-white transition-colors ${span ? "md:col-span-2" : ""}`}
             >
-              {badge && (
-                <span
-                  className={`absolute top-4 right-4 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    badge === "New"
-                      ? "bg-indigo-100 text-indigo-600"
-                      : "bg-green-100 text-green-600"
-                  }`}
-                >
-                  {badge}
-                </span>
-              )}
-              <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:bg-indigo-100 transition-colors">
-                {icon}
+              <div className="flex items-center justify-between mb-6">
+                <span className="font-mono text-xs tracking-widest text-ink-soft uppercase">{period}</span>
+                <Icon size={20} className="text-ink/50" strokeWidth={2} />
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
-            </div>
+              <h3 className="font-display font-bold text-ink text-xl mb-2">{title}</h3>
+              <p className="font-body text-ink-soft leading-relaxed">{desc}</p>
+            </motion.div>
           ))}
         </div>
       </div>
     </section>
   );
-}
+};
+
+export default Features;

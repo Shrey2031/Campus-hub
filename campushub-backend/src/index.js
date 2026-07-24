@@ -1,29 +1,24 @@
-// require ('dotenv').config({path: './env'})
-import dotenv from 'dotenv'
-import discussionModel from './models/discussion.model.js';
+import 'dotenv/config';
+
+import jwt from 'jsonwebtoken';
+import DiscussionRoom from './models/discussion.model.js';
 import Message from './models/message.model.js';
 import { app } from './app.js';
 import connectDB from './db/connect.js';
-import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { User } from './models/user.model.js'; // ✅ Import User model
+import { User } from './models/user.model.js';
 
-
-// const app = express();
-const httpServer = createServer(app);  // ✅ HTTP server for WebSocket
-const io = new Server(httpServer, {     // ✅ Socket.IO server
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
   cors: {
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true
   }
 });
-dotenv.config({
-    path: './.env'
-})
 
-// In your server.js or cron file
+
 setInterval(async () => {
   try {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
@@ -35,184 +30,159 @@ setInterval(async () => {
       console.log(`🔄 Cleaned ${result.modifiedCount} offline users`);
     }
   } catch (error) {
-    console.error('❌ Cron cleanup failed:', error);
+    console.error(' Cron cleanup failed:', error);
   }
 }, 5 * 60 * 1000);
 
-io.on('connection', (socket) => {
-  console.log('🔌 Socket connected:', socket.id);
 
- 
-  socket.on('join-user', async (userId) => {
-  socket.join(`user_${userId}`);
-  socket.userId = userId;
-  
+io.use(async (socket, next) => {
   try {
-    const user = await User.findById(userId).select('fullname username avatar');
-    socket.username = user.fullname || user.username; // 🔥 Store for logging
-    
-    await User.findByIdAndUpdate(userId, {
-      isOnline: true,
-      socketId: socket.id,
-      lastActive: new Date(),
-      status: 'online'
-    });
-    
-    console.log(`✅ ${socket.username} (${userId}) is ONLINE`);
-    io.emit('active-users-update');
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error('Authentication required'));
+
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const user = await User.findById(decoded._id).select('fullname username avatar branch semester');
+    if (!user) return next(new Error('User not found'));
+
+    socket.userId = user._id.toString();
+    socket.user = user;
+    next();
   } catch (error) {
-    console.error('❌ Status update failed:', error);
+    next(new Error('Authentication failed'));
   }
 });
-  
+
+io.on('connection', (socket) => {
+  console.log(`🔌 Socket connected: ${socket.id} (${socket.user.fullname || socket.user.username})`);
+
+
+  socket.on('join-user', async () => {
+    socket.join(`user_${socket.userId}`);
+
+    try {
+      await User.findByIdAndUpdate(socket.userId, {
+        isOnline: true,
+        socketId: socket.id,
+        lastActive: new Date(),
+        status: 'online'
+      });
+
+      console.log(` ${socket.user.fullname || socket.user.username} (${socket.userId}) is ONLINE`);
+      io.emit('active-users-update');
+    } catch (error) {
+      console.error('❌ Status update failed:', error);
+    }
+  });
 
   socket.on('join-room', async (roomId) => {
-  socket.join(`room_${roomId}`);
-  socket.currentRoom = roomId;
-  
-  try {
-    // Get user data
-    const user = await User.findById(socket.userId)
-      .select('fullname username avatar branch semester');
-    
-    await DiscussionRoom.findByIdAndUpdate(roomId, {
-      $addToSet: { participants: socket.userId }
-    });
-    
-    // 🔥 EMIT FULL USER DATA
-    socket.to(`room_${roomId}`).emit('user-joined', {
-      userId: socket.userId,
-      fullname: user.fullname || user.username || 'User',
-      username: user.username,
-      avatar: user.avatar,
-      branch: user.branch,
-      semester: user.semester
-    });
-    
-    console.log(`👥 ${user.fullname} joined room ${roomId}`);
-  } catch (error) {
-    console.error('❌ Room join failed:', error);
-  }
-});
+    socket.join(`room_${roomId}`);
+    socket.currentRoom = roomId;
 
-  // socket.on('room-message', async (data) => {
-  //   try {
-  //     const message = new Message({
-  //       room: data.roomId,
-  //       user: socket.userId,
-  //       content: data.content,
-  //       type: 'text'
-  //     });
-  //     await message.save();
-      
-  //     // Broadcast to room
-  //     global.io.to(`room_${data.roomId}`).emit('new-message', {
-  //       _id: message._id,
-  //       content: data.content,
-  //       user: { 
-  //         _id: socket.userId, 
-  //         fullname: socket.username || 'User' 
-  //       },
-  //       createdAt: message.createdAt
-  //     });
-      
-  //     console.log(`💬 Message in ${data.roomId}: ${data.content.slice(0, 30)}`);
-  //   } catch (error) {
-  //     console.error('❌ Message save failed:', error);
-  //     socket.emit('error', 'Failed to send message');
-  //   }
-  // });
+    try {
+      await DiscussionRoom.findByIdAndUpdate(roomId, {
+        $addToSet: { participants: socket.userId }
+      });
 
-  // 🔥 Leave room
-  socket.on('room-message', async (data) => {
-  try {
-    // 🔥 GET FULL USER DATA like posts
-    const user = await User.findById(socket.userId)
-      .select('fullname username avatar branch semester _id');
-    
-    if (!user) {
-      socket.emit('error', 'User not found');
-      return;
+      socket.to(`room_${roomId}`).emit('user-joined', {
+        userId: socket.userId,
+        fullname: socket.user.fullname || socket.user.username || 'User',
+        username: socket.user.username,
+        avatar: socket.user.avatar,
+        branch: socket.user.branch,
+        semester: socket.user.semester
+      });
+
+      console.log(` ${socket.user.fullname} joined room ${roomId}`);
+    } catch (error) {
+      console.error(' Room join failed:', error);
     }
+  });
 
-    const message = new Message({
-      room: data.roomId,
-      user: socket.userId,
-      content: data.content,
-      type: 'text'
-    });
-    await message.save();
-    
-    // 🔥 EMIT FULL USER DATA EXACTLY like PostCard
-    global.io.to(`room_${data.roomId}`).emit('new-message', {
-      _id: message._id,
-      content: data.content,
-      createdAt: message.createdAt,
-      sender: {  // 🔥 FULL USER OBJECT
-        _id: user._id,
-        fullname: user.fullname || user.username || 'User',
-        username: user.username,
-        avatar: user.avatar,
-        branch: user.branch,
-        semester: user.semester
-      }
-    });
-    
-    console.log(`💬 ${user.fullname} in ${data.roomId}: ${data.content.slice(0, 30)}`);
-  } catch (error) {
-    console.error('❌ Message save failed:', error);
-    socket.emit('error', 'Failed to send message');
-  }
-});
+  socket.on('room-message', async (data) => {
+    try {
+      const message = new Message({
+        room: data.roomId,
+        user: socket.userId,
+        content: data.content,
+        type: 'text'
+      });
+      await message.save();
+
+      io.to(`room_${data.roomId}`).emit('new-message', {
+        _id: message._id,
+        content: data.content,
+        createdAt: message.createdAt,
+        sender: {
+          _id: socket.userId,
+          fullname: socket.user.fullname || socket.user.username || 'User',
+          username: socket.user.username,
+          avatar: socket.user.avatar,
+          branch: socket.user.branch,
+          semester: socket.user.semester
+        }
+      });
+
+      console.log(` ${socket.user.fullname} in ${data.roomId}: ${data.content.slice(0, 30)}`);
+    } catch (error) {
+      console.error('❌ Message save failed:', error);
+      socket.emit('error', 'Failed to send message');
+    }
+  });
 
   socket.on('leave-room', (roomId) => {
     socket.leave(`room_${roomId}`);
     console.log(`👋 ${socket.userId} left ${roomId}`);
   });
 
-    socket.on('update-status', async (status) => {
-    if (socket.userId) {
+  socket.on('update-status', async (status) => {
+    try {
       await User.findByIdAndUpdate(socket.userId, {
         status,
         lastActive: new Date()
       });
       io.emit('active-users-update');
+    } catch (error) {
+      console.error('❌ Status update failed:', error);
     }
   });
 
   socket.on('disconnect', async () => {
     console.log('🔌 Socket disconnected:', socket.id);
-    
-    if (socket.userId) {
-      try {
-        await User.findByIdAndUpdate(socket.userId, {
-          isOnline: false,
-          socketId: null,
-          lastActive: new Date(),
-          status: 'offline'
-        });
-        console.log(`❌ User ${socket.userId} went OFFLINE`);
-        io.emit('active-users-update');
-      } catch (error) {
-        console.error('❌ Disconnect update failed:', error);
-      }
+
+    try {
+      await User.findByIdAndUpdate(socket.userId, {
+        isOnline: false,
+        socketId: null,
+        lastActive: new Date(),
+        status: 'offline'
+      });
+      console.log(`❌ User ${socket.userId} went OFFLINE`);
+      io.emit('active-users-update');
+    } catch (error) {
+      console.error('❌ Disconnect update failed:', error);
     }
   });
 });
 
 
-
-
-
-// 🔥 Make io globally available
 global.io = io;
 
-connectDB();
 const PORT = process.env.PORT || 5000;
+
 connectDB().then(() => {
-  httpServer.listen(PORT, () => {  // ✅ Use httpServer!
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`🔌 Socket.io ready on http://localhost:${PORT}`);
-    console.log(`🌐 CORS origin: http://localhost:5173`);
+  httpServer.listen(PORT, () => {
+    console.log(` Server running on http://localhost:${PORT}`);
+    console.log(` Socket.io ready on http://localhost:${PORT}`);
+    console.log(` CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
   });
+});
+
+
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  process.exit(1);
 });

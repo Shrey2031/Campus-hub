@@ -1,4 +1,3 @@
-// models/Notification.js
 import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
@@ -6,7 +5,7 @@ const notificationSchema = new mongoose.Schema({
   message: String,
   type: {
     type: String,
-    enum: ["like", "comment", "system", "follow", "mention"]  // ✅ Added more types
+    enum: ["like", "comment", "system", "follow", "mention"]
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -18,9 +17,12 @@ const notificationSchema = new mongoose.Schema({
     default: false
   },
   relatedId: {
-    type: mongoose.Schema.Types.ObjectId,  // ✅ Post/Comment ID for linking
+    type: mongoose.Schema.Types.ObjectId,
     required: false
   }
 }, { timestamps: true });
+
+
+notificationSchema.index({ user: 1, createdAt: -1 });
 
 export default mongoose.model('Notification', notificationSchema);

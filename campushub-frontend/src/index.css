@@ -1,7 +1,45 @@
 @import "tailwindcss";
-@import "tailwindcss";
+
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@theme {
+  --color-paper: #F4F5EF;
+  --color-ink: #16213A;
+  --color-ink-soft: #5B6478;
+  --color-highlighter: #D7FF5F;
+  --color-redpen: #E1443B;
+
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+.marker {
+  background-image: linear-gradient(104deg, transparent 0.5%, var(--color-highlighter) 0.5%, var(--color-highlighter) 92%, transparent 92%);
+  background-repeat: no-repeat;
+  background-size: 100% 45%;
+  background-position: 0 65%;
+  padding: 0 0.15em;
+}
+
+.marker-dark {
+  background-image: linear-gradient(104deg, transparent 0.5%, var(--color-highlighter) 0.5%, var(--color-highlighter) 92%, transparent 92%);
+  background-repeat: no-repeat;
+  background-size: 100% 45%;
+  background-position: 0 65%;
+  padding: 0 0.15em;
+  color: var(--color-ink);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}
+.animate-marquee {
+  animation: marquee 22s linear infinite;
+}
 
 @layer base {
   html {

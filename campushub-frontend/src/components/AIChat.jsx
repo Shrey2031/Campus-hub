@@ -1,18 +1,79 @@
-import  { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeft, Bot, Send } from 'lucide-react';
+import { ArrowLeft, Bot, Send, Copy, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+
+const parseMessageParts = (text) => {
+  const parts = [];
+  const regex = /```(\w*)\n?([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+    }
+    parts.push({ type: 'code', lang: match[1], content: match[2].trim() });
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push({ type: 'text', content: text.slice(lastIndex) });
+  }
+
+  return parts.length ? parts : [{ type: 'text', content: text }];
+};
+
+const CodeBlock = ({ lang, content }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div className="bg-ink rounded-sm overflow-hidden my-2">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-dashed border-paper/20">
+        <span className="font-mono text-[10px] uppercase tracking-wide text-paper/50">{lang || 'code'}</span>
+        <button onClick={handleCopy} className="text-paper/50 hover:text-paper transition-colors">
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+      <pre className="p-3 overflow-x-auto">
+        <code className="font-mono text-xs text-paper leading-relaxed">{content}</code>
+      </pre>
+    </div>
+  );
+};
+
+const MessageContent = ({ text }) => (
+  <>
+    {parseMessageParts(text).map((part, i) =>
+      part.type === 'code' ? (
+        <CodeBlock key={i} lang={part.lang} content={part.content} />
+      ) : (
+        part.content.trim() && (
+          <p key={i} className="font-body text-sm whitespace-pre-wrap leading-relaxed">
+            {part.content.trim()}
+          </p>
+        )
+      )
+    )}
+  </>
+);
 
 const AIChat = () => {
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
   const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Update API URL for production
-  
   const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
-
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -22,88 +83,85 @@ const AIChat = () => {
     scrollToBottom();
   }, [chatHistory]);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!question.trim()) return;
 
+    const userQuestion = question;
+    setLoading(true);
+    setChatHistory(prev => [...prev, { type: 'user', text: userQuestion }]);
+    setQuestion('');
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!question.trim()) return;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/ai/ask`, { question: userQuestion });
+      setChatHistory(prev => [...prev, { type: 'ai', text: response.data.answer }]);
+    } catch (error) {
+      console.error('AI error:', error.response?.data || error.message);
+      setChatHistory(prev => [...prev, { type: 'error', text: 'AI service error' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const userQuestion = question;
-  setLoading(true);
-  setChatHistory(prev => [...prev, { type: 'user', text: userQuestion }]);
-  setQuestion('');
-
-  try {
-    // 🔥 HARDCODE WORKING URL - COPY THIS EXACTLY
-    const response = await axios.post(`${API_BASE_URL}/ai/ask`, {
-      question: userQuestion
-    });
-    
-    console.log('✅ AI Response:', response.data);
-    
-    setChatHistory(prev => [...prev, { type: 'ai', text: response.data.answer }]);
-  } catch (error) {
-    console.error('❌ Error:', error.response?.data || error.message);
-    setChatHistory(prev => [...prev, { type: 'error', text: 'AI service error' }]);
-  } finally {
-    setLoading(false);
-  }
-};
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="flex flex-col h-screen bg-paper">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-white/50 p-6 sticky top-0 z-10 shadow-lg">
-        <div className="max-w-4xl mx-auto flex items-center">
-          <div className="p-2 rounded-2xl bg-indigo-100 mr-4 hover:bg-indigo-200 transition-all cursor-pointer">
-            <ArrowLeft className="w-5 h-5 text-indigo-600" />
-          </div>
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mr-3 shadow-lg">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
+      <div className="bg-paper/95 backdrop-blur border-b-2 border-dashed border-ink/20 p-5 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2.5 bg-white border border-ink/10 rounded hover:border-ink transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-ink" />
+          </button>
+          <div className="flex items-center gap-3">
+            <span className="w-10 h-10 bg-ink rounded flex items-center justify-center">
+              <Bot className="w-5 h-5 text-paper" />
+            </span>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                AI Assistant
-              </h1>
-              <p className="text-sm text-gray-600">Ask anything about campus, courses, events...</p>
+              <h1 className="font-display font-bold text-ink text-xl">AI Assistant</h1>
+              <p className="font-mono text-[10px] uppercase tracking-wide text-ink-soft">
+                Powered by Gemini
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-hidden max-w-4xl mx-auto w-full px-6 py-8">
-        <div className="chat-container h-full flex flex-col">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto space-y-4 mb-6 pr-2">
+      {/* Chat area */}
+      <div className="flex-1 overflow-hidden max-w-4xl mx-auto w-full px-6 py-6">
+        <div className="h-full flex flex-col">
+          <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
             {chatHistory.length === 0 ? (
-              <div className="text-center py-20 text-gray-500">
-                <Bot className="w-16 h-16 mx-auto mb-4 opacity-40" />
-                <h3 className="text-xl font-semibold mb-2">Welcome to AI Assistant!</h3>
-                <p>Ask me anything about your campus life</p>
+              <div className="text-center py-20 text-ink-soft">
+                <Bot className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                <h3 className="font-display font-bold text-ink text-lg mb-1">Ask anything</h3>
+                <p className="font-body text-sm">Doubts, definitions, concepts — I'll explain, not just define.</p>
               </div>
             ) : (
               chatHistory.map((msg, index) => (
                 <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md p-4 rounded-2xl shadow-lg ${
-                    msg.type === 'user' 
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white' 
+                  <div className={`max-w-xs lg:max-w-xl p-3.5 rounded-sm ${
+                    msg.type === 'user'
+                      ? 'bg-ink text-paper'
                       : msg.type === 'ai'
-                      ? 'bg-white border border-gray-200' 
-                      : 'bg-red-100 border border-red-300 text-red-800'
+                      ? 'bg-white border border-ink/10 text-ink'
+                      : 'bg-redpen/5 border border-redpen/30 text-redpen'
                   }`}>
-                    <div className="whitespace-pre-wrap">{msg.text}</div>
+                    {msg.type === 'ai' ? (
+                      <MessageContent text={msg.text} />
+                    ) : (
+                      <p className="font-body text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                    )}
                   </div>
                 </div>
               ))
             )}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-lg max-w-xs">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500"></div>
-                    <span className="text-gray-600">AI is typing...</span>
-                  </div>
+                <div className="bg-white border border-ink/10 p-3.5 rounded-sm max-w-xs flex items-center gap-2.5">
+                  <div className="w-4 h-4 border-2 border-ink/15 border-t-ink rounded-full animate-spin" />
+                  <span className="font-mono text-xs text-ink-soft">AI is typing...</span>
                 </div>
               </div>
             )}
@@ -111,15 +169,15 @@ const handleSubmit = async (e) => {
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="sticky bottom-0 bg-white/80 backdrop-blur-xl p-4 rounded-2xl shadow-2xl border border-white/50">
-            <div className="flex items-end space-x-3">
+          <form onSubmit={handleSubmit} className="sticky bottom-0 bg-white border border-ink/10 rounded-sm p-3">
+            <div className="flex items-end gap-2.5">
               <input
                 type="text"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 placeholder="Ask anything..."
-                className="flex-1 p-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                 disabled={loading}
+                className="flex-1 p-3 bg-paper border border-ink/15 rounded font-body text-sm focus:outline-none focus:border-ink"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -130,9 +188,9 @@ const handleSubmit = async (e) => {
               <button
                 type="submit"
                 disabled={loading || !question.trim()}
-                className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-11 h-11 bg-ink text-paper rounded hover:bg-redpen transition-colors flex items-center justify-center disabled:opacity-40 flex-shrink-0"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </form>
